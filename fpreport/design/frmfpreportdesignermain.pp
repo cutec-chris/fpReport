@@ -1285,7 +1285,7 @@ procedure TFPReportDesignerForm.DoElementCreated(Sender: TObject;
 begin
   If AElement is TFPReportCustomMemo then
     begin
-    TFPReportMemo(AElement).Font.Name := 'LiberationSans';
+    TFPReportMemo(AElement).Font.Name := 'ArialMT';
     if TFPReportMemo(AElement).Text='' then
       TFPReportMemo(AElement).Text:='New memo';
     end;

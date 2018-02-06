@@ -3509,7 +3509,8 @@ begin
   { We are doing a PostScript Name lookup (it contains Bold, Italic info) }
   lFC := gTTFontCache.Find(Font.Name);
   if not Assigned(lFC) then
-    raise EReportFontNotFound.CreateFmt(SErrFontNotFound, [Font.Name]);
+    exit;
+    //raise EReportFontNotFound.CreateFmt(SErrFontNotFound, [Font.Name]);
   { result is in pixels }
   lWidth := lFC.TextWidth(Text, Font.Size);
   lHeight := lFC.TextHeight(Text, Font.Size, lDescenderHeight);

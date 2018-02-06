@@ -17,7 +17,6 @@ object ReportVariablesForm: TReportVariablesForm
     Anchors = [akTop, akLeft, akRight, akBottom]
     ItemHeight = 0
     OnSelectionChange = LBVariablesSelectionChange
-    Options = [lboDrawFocusRect]
     ScrollWidth = 214
     TabOrder = 0
     TopIndex = -1

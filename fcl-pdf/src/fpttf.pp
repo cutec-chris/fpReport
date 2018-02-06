@@ -520,15 +520,21 @@ procedure TFPFontCacheList.ReadStandardFonts;
   {$ifdef mswindows}
   function GetWinFontsDir: string;
   var
+    {$if FPC_FULLVERSION < 30000}
+    w :  Array[0..MaxPathLen] of Char;
+    {$ELSE}
     w : pwidechar;
+    {$ENDIF}
   begin
     {$if FPC_FULLVERSION < 30000}
-    SHGetFolderPath(0,CSIDL_FONTS,0,0,PChar(w));
+    SHGetSpecialFolderPath(0,w,CSIDL_FONTS,false);
     {$else}
     SHGetKnownFolderPath(FOLDERID_Fonts,0,0,w);
     {$endif}
     Result := w;
+    {$if FPC_FULLVERSION > 30000}
     CoTaskMemFree(w);
+    {$endif}
   end;
   {$endif}
 

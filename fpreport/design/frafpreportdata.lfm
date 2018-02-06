@@ -47,7 +47,6 @@ object ReportDataDisplay: TReportDataDisplay
         DragMode = dmAutomatic
         ItemHeight = 0
         OnStartDrag = LBVariablesStartDrag
-        Options = [lboDrawFocusRect]
         ScrollWidth = 312
         TabOrder = 0
         TopIndex = -1

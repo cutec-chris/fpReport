@@ -569,6 +569,7 @@ begin
 
   {$ifdef mswindows}
   SearchPath.Add(GetWinFontsDir);
+  SearchPath.Add('fonts');
   {$endif}
 
   {$ifdef darwin} // OSX

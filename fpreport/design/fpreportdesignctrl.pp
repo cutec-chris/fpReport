@@ -15,6 +15,8 @@
 unit fpreportdesignctrl;
 
 {$mode objfpc}{$H+}
+{$modeswitch advancedrecords}
+
 { $DEFINE DEBUGRD}
 
 interface
@@ -27,6 +29,18 @@ Const
   clGrid  = TColor($E0E0E0);      // Default color for guide grid
   clSelectRect = clNavy;          // Pen color to draw selection rectangle
   psSelectRect = psDashDot;       // Pen style to draw selection rectangle with
+
+type
+  TRectHelper = record helper for TRect
+  private
+    function GetWidth: Integer;
+    procedure SetWidth(const Value: Integer);
+    function GetHeight: Integer;
+    procedure SetHeight(const Value: Integer);
+  public
+    property Width: Integer read GetWidth write SetWidth;
+    property Height: Integer read GetHeight write SetHeight;
+  end;
 
 Type
   TSelectResult = (srNone,srSelected,srDeselected);
@@ -175,6 +189,26 @@ const
   cMoveStepSmall = 1;
   cMoveStepLarge = 8;
 
+  function TRectHelper.GetHeight: Integer;
+  begin
+    Result := Bottom - Top;
+  end;
+
+  procedure TRectHelper.SetHeight(const Value: Integer);
+  begin
+    Bottom := Top + Value;
+  end;
+
+  function TRectHelper.GetWidth: Integer;
+  begin
+    Result := Right - Left;
+  end;
+
+  procedure TRectHelper.SetWidth(const Value: Integer);
+  begin
+    Right := Left + Value;
+  end;
+
 { ---------------------------------------------------------------------
   TFPReportDesignerControl
   ---------------------------------------------------------------------}
@@ -238,7 +272,7 @@ Var
   I : Integer;
   O : TReportObject;
   R : TRect;
-  
+
 begin
   Result:=srNone;
   R:=NormalizeRect(ARect);
@@ -378,14 +412,15 @@ begin
     E:=TFPReportMemo.Create(ABand);
     C:=(Source as TMemoDragDrop).Content;
     TFPReportMemo(E).Text:=C;
-    {$IF FPC_FULLVERSION>30000}
+    {$if FPC_FULLVERSION>30000}
     R:=Default(TRect);
     {$else}
+    R:=Rect(0,0,0,0);
     {$endif}
     OffSetRect(R,X,Y);
     S:=Canvas.TextExtent(C);
-    R.Right:=Round(S.cx*1.2)-R.Left;
-    R.Bottom:=Round(S.cy*1.2)-R.Top;
+    R.Width:=Round(S.cx*1.2);
+    R.Height:=Round(S.cy*1.2);
     end;
   DoAddControl(ABand,E,R,False);
   FObjects.SelectElement(E);
@@ -1223,4 +1258,5 @@ begin
 end;
 
 end.
+
 

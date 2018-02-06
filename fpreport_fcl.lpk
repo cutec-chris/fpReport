@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="fpreport_fcl"/>
+    <Type Value="RunAndDesignTime"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <IncludeFiles Value="fcl-report\src"/>
+        <OtherUnitFiles Value="fcl-pdf\src;fcl-report\src;fcl-image\src"/>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)\"/>
+      </SearchPaths>
+    </CompilerOptions>
+    <Files Count="25">
+      <Item1>
+        <Filename Value="fcl-pdf\src\fpfonttextmapping.pp"/>
+        <UnitName Value="FPFontTextMapping"/>
+      </Item1>
+      <Item2>
+        <Filename Value="fcl-pdf\src\fpparsettf.pp"/>
+        <UnitName Value="fpparsettf"/>
+      </Item2>
+      <Item3>
+        <Filename Value="fcl-pdf\src\fppdf.pp"/>
+        <UnitName Value="fpPDF"/>
+      </Item3>
+      <Item4>
+        <Filename Value="fcl-pdf\src\fpttf.pp"/>
+        <UnitName Value="fpTTF"/>
+      </Item4>
+      <Item5>
+        <Filename Value="fcl-pdf\src\fpttfencodings.pp"/>
+        <UnitName Value="fpttfencodings"/>
+      </Item5>
+      <Item6>
+        <Filename Value="fcl-pdf\src\fpttfsubsetter.pp"/>
+        <UnitName Value="fpTTFSubsetter"/>
+      </Item6>
+      <Item7>
+        <Filename Value="fcl-report\src\fpextfuncs.pp"/>
+        <UnitName Value="fpExtFuncs"/>
+      </Item7>
+      <Item8>
+        <Filename Value="fcl-report\src\fpjsonreport.pp"/>
+        <UnitName Value="fpjsonreport"/>
+      </Item8>
+      <Item9>
+        <Filename Value="fcl-report\src\fprepexprpars.pp"/>
+        <UnitName Value="fprepexprpars"/>
+      </Item9>
+      <Item10>
+        <Filename Value="fcl-report\src\fpreport.pp"/>
+        <UnitName Value="fpreport"/>
+      </Item10>
+      <Item11>
+        <Filename Value="fcl-report\src\fpreportbarcode.pp"/>
+        <UnitName Value="fpreportbarcode"/>
+      </Item11>
+      <Item12>
+        <Filename Value="fcl-report\src\fpreportcanvashelper.pp"/>
+        <UnitName Value="fpreportcanvashelper"/>
+      </Item12>
+      <Item13>
+        <Filename Value="fcl-report\src\fpreportcheckbox.inc"/>
+        <Type Value="Include"/>
+      </Item13>
+      <Item14>
+        <Filename Value="fcl-report\src\fpreportcontnr.pp"/>
+        <UnitName Value="fpreportcontnr"/>
+      </Item14>
+      <Item15>
+        <Filename Value="fcl-report\src\fpreportdb.pp"/>
+        <UnitName Value="fpreportdb"/>
+      </Item15>
+      <Item16>
+        <Filename Value="fcl-report\src\fpreportdom.pp"/>
+        <UnitName Value="fpreportdom"/>
+      </Item16>
+      <Item17>
+        <Filename Value="fcl-report\src\fpreportfpimageexport.pp"/>
+        <UnitName Value="fpreportfpimageexport"/>
+      </Item17>
+      <Item18>
+        <Filename Value="fcl-report\src\fpreporthtmlexport.pp"/>
+        <UnitName Value="fpreporthtmlexport"/>
+      </Item18>
+      <Item19>
+        <Filename Value="fcl-report\src\fpreporthtmlparser.pp"/>
+        <UnitName Value="fpReportHTMLParser"/>
+      </Item19>
+      <Item20>
+        <Filename Value="fcl-report\src\fpreporthtmlutil.pp"/>
+        <UnitName Value="fpreporthtmlutil"/>
+      </Item20>
+      <Item21>
+        <Filename Value="fcl-report\src\fpreportjson.pp"/>
+        <UnitName Value="fpreportjson"/>
+      </Item21>
+      <Item22>
+        <Filename Value="fcl-report\src\fpreportpdfexport.pp"/>
+        <UnitName Value="fpreportpdfexport"/>
+      </Item22>
+      <Item23>
+        <Filename Value="fcl-report\src\fpreportqrcode.pp"/>
+        <UnitName Value="fpreportqrcode"/>
+      </Item23>
+      <Item24>
+        <Filename Value="fcl-report\src\fpreportstreamer.pp"/>
+        <UnitName Value="fpReportStreamer"/>
+      </Item24>
+      <Item25>
+        <Filename Value="fcl-image\src\fpimgbarcode.pp"/>
+        <UnitName Value="fpimgbarcode"/>
+      </Item25>
+    </Files>
+    <RequiredPkgs Count="1">
+      <Item1>
+        <PackageName Value="FCL"/>
+      </Item1>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

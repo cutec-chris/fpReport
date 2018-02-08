@@ -9066,7 +9066,7 @@ begin
   if Assigned(FOnGetUsePrevValue) and
   FOnGetUsePrevValue() then
     SetResult(FPrevValue)
-  else
+  else if Fvalue <> Null then
     SetResult(FValue);
 end;
 
@@ -9747,7 +9747,8 @@ var
 begin
   { move all allready layouted group footers (only bpStackAtBottom)
     up by offset of page footer                                      }
-  lOffset := FRTPage.RTLayout.Top + FRTPage.RTLayout.Height - FPageFooterYPos;
+  if Assigned(FRTPage) then
+    lOffset := FRTPage.RTLayout.Top + FRTPage.RTLayout.Height - FPageFooterYPos;
   for i:=0 to FRTBottomStackedFooterList.Count-1 do
   begin
     lFooter := FRTBottomStackedFooterList[i];

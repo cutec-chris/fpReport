@@ -109,7 +109,7 @@ type
   TFPReportFrameLine      = (flTop, flBottom, flLeft, flRight);
   TFPReportFrameLines     = set of TFPReportFrameLine;
   TFPReportFrameShape     = (fsNone, fsRectangle, fsRoundedRect, fsDoubleRect, fsShadow);
-  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream);
+  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream, rfkMemoStream);
   TFPReportStretchMode    = (smDontStretch, smActualHeight, smMaxHeight);
   TFPReportHTMLTag        = (htRegular, htBold, htItalic);
   TFPReportHTMLTagSet     = set of TFPReportHTMLTag;

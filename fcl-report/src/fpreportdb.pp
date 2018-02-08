@@ -51,6 +51,7 @@ resourcestring
 procedure TFPReportDatasetData.DoGetValue(const AFieldName: string; var AValue: variant);
 var
   ms: TMemoryStream;
+  ss: TStringStream;
 begin
   inherited DoGetValue(AFieldName, AValue);
   try
@@ -99,7 +100,7 @@ var
       ftVarBytes:       Result := rfkStream;
       ftAutoInc:        Result := rfkInteger;
       ftBlob:           Result := rfkStream;
-      ftMemo:           Result := rfkStream;
+      ftMemo:           Result := rfkMemoStream;
       ftGraphic:        Result := rfkStream;
       ftFmtMemo:        Result := rfkString;
       //ftParadoxOle:

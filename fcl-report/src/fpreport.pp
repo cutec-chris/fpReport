@@ -10445,6 +10445,8 @@ begin
   if IsFirstPass then
   begin
     Report.InitializeExpressionVariables(Pages[aPageIdx], aPageData);
+    for i := 0 to Report.ReportData.Count-1 do
+      Report.InitializeExpressionVariables(Pages[aPageIdx], Report.ReportData.Data[i].Data);
     Report.CacheMemoExpressions(aPageIdx, aPageData);
   end;
   aPageData.First;

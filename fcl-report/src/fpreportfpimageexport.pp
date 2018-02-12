@@ -150,7 +150,7 @@ type
 implementation
 
 uses
-  ftFont,
+  ftFont_n,
   fpTTF,
   fpparsettf,
   fpwritepng;

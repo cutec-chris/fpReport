@@ -9662,12 +9662,12 @@ end;
 function TFPReportLayouter.HandleHeaderBands: Boolean;
 begin
   Result := False;
+  if Assigned(FTitle) then
+    ShowBandWithChilds(FTitle);
   { Show all header bands }
   if Assigned(FPageHeader) then
     //ShowPageHeaderBand(FPageHeader);
     ShowBandWithChilds(FPageHeader);
-  if Assigned(FTitle) then
-    ShowBandWithChilds(FTitle);
 end;
 
 procedure TFPReportLayouter.HandleFooterBands;

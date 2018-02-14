@@ -10448,6 +10448,8 @@ begin
     for i := 0 to Report.ReportData.Count-1 do
       Report.InitializeExpressionVariables(Pages[aPageIdx], Report.ReportData.Data[i].Data);
     Report.CacheMemoExpressions(aPageIdx, aPageData);
+    for i := 0 to Report.ReportData.Count-1 do
+      Report.CacheMemoExpressions(aPageIdx, Report.ReportData.Data[i].Data);
   end;
   aPageData.First;
   InitBandList(Pages[aPageIdx],aPageData);

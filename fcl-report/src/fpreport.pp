@@ -1255,11 +1255,15 @@ type
   end;
 
 
+  { TFPReportCustomDataHeaderBand }
+
   TFPReportCustomDataHeaderBand = class(TFPReportCustomBandWithData)
   protected
+    FPrinted : Boolean;
     function GetReportBandName: string; override;
   Public
     Class Function ReportBandType : TFPReportBandType; override;
+    constructor Create(AOwner: TComponent); override;
   end;
 
 
@@ -1576,7 +1580,6 @@ type
     FHasGroups: boolean;
     FHasGroupFooter: boolean;
     FHasReportSummaryBand: boolean;
-    FDataHeaderPrinted: boolean;
     FColumnDetailsPrinted: Boolean;
     FRTCurrentColumn: UInt8;
     FRTIsMultiColumn: boolean;
@@ -9604,6 +9607,12 @@ begin
   Result:=btDataHeader;
 end;
 
+constructor TFPReportCustomDataHeaderBand.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FPrinted:=False;
+end;
+
 { TFPReportCustomDataFooterBand }
 
 function TFPReportCustomDataFooterBand.GetReportBandName: string;
@@ -10202,10 +10211,10 @@ end;
 
 procedure TFPReportLayouter.ShowDataHeaderBand(const aBand: TFPReportCustomDataHeaderBand);
 begin
-  if FDataHeaderPrinted then
+  if aBand.FPrinted then
     Exit; // nothing further to do
   if ShowBandWithChilds(aBand) then
-    FDataHeaderPrinted := True;
+    aBand.FPrinted := True;
 end;
 
 procedure TFPReportLayouter.ShowDetailBand(const AMasterBand: TFPReportCustomDataBand);
@@ -10260,7 +10269,6 @@ begin
         lData.Next;
         end;  { while not lData.EOF }
       Report.Variables.PrepareExpressionValues;
-      FDataHeaderPrinted := False;
       CheckNewOrOverFlow;
       // only print if we actually had data
       if (lData.RecNo > 1) and (lDsgnDetailBand.FooterBand <> nil) then
@@ -10506,7 +10514,6 @@ begin
   FHasGroups := False;
   FHasGroupFooter := False;
   FHasReportSummaryBand := False;
-  FDataHeaderPrinted := False;
   FLastGroupCondition := '';
   InitPageNumber;
   FDataLevelStack := 0;

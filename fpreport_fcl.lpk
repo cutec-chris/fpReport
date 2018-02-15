@@ -9,11 +9,11 @@
       <PathDelim Value="\"/>
       <SearchPaths>
         <IncludeFiles Value="fcl-report\src"/>
-        <OtherUnitFiles Value="fcl-pdf\src;fcl-report\src;fcl-image\src"/>
-        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)\"/>
+        <OtherUnitFiles Value="fcl-pdf\src;fcl-report\src;fcl-image\src;lazreport-scripting"/>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
     </CompilerOptions>
-    <Files Count="25">
+    <Files Count="28">
       <Item1>
         <Filename Value="fcl-pdf\src\fpfonttextmapping.pp"/>
         <UnitName Value="FPFontTextMapping"/>
@@ -114,6 +114,18 @@
         <Filename Value="fcl-image\src\fpimgbarcode.pp"/>
         <UnitName Value="fpimgbarcode"/>
       </Item25>
+      <Item26>
+        <Filename Value="lazreport-scripting\nr_intrp.pas"/>
+        <UnitName Value="nr_intrp"/>
+      </Item26>
+      <Item27>
+        <Filename Value="lazreport-scripting\nr_pars.pas"/>
+        <UnitName Value="nr_pars"/>
+      </Item27>
+      <Item28>
+        <Filename Value="lazreport-scripting\nr_const.pas"/>
+        <UnitName Value="nr_const"/>
+      </Item28>
     </Files>
     <RequiredPkgs Count="1">
       <Item1>
@@ -126,5 +138,8 @@
     <PublishOptions>
       <Version Value="2"/>
     </PublishOptions>
+    <CustomOptions Items="ExternHelp" Version="2">
+      <_ExternHelp Items="Count"/>
+    </CustomOptions>
   </Package>
 </CONFIG>

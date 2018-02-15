@@ -12,7 +12,8 @@ uses
   fpreportcanvashelper, fpreportcontnr, fpreportdb, fpreportdom, 
   fpreportfpimageexport, fpreporthtmlexport, fpReportHTMLParser, 
   fpreporthtmlutil, fpreportjson, fpreportpdfexport, fpreportqrcode, 
-  fpReportStreamer, fpimgbarcode, LazarusPackageIntf;
+  fpReportStreamer, fpimgbarcode, nr_intrp, nr_pars, nr_const, 
+  LazarusPackageIntf;
 
 implementation
 

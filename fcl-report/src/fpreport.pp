@@ -7826,6 +7826,12 @@ begin
       h := c.RTLayout.Top + c.RTLayout.Height;
   end;
   RTLayout.Height := h;
+  for i := 0 to ChildCount-1 do
+  begin
+    c := Child[i];
+    if c.StretchMode = smMaxHeight then
+      c.RTLayout.Height := h-c.RTLayout.Top;
+  end;
 end;
 
 procedure TFPReportCustomBand.SetFont(AValue: TFPReportFont);

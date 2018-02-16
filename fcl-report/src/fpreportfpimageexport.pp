@@ -416,7 +416,7 @@ begin
     Canvas.TextOut(
         mmToPixels(lXPos),
         mmToPixels(lYPos),
-        txtblk.Text
+        UTF8Decode(txtblk.Text)
     );
   end;
 end;

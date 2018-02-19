@@ -180,7 +180,7 @@ begin
     begin
     PI:=GetPropInfo(O,AFieldName);
     if Assigned(PI) then
-      {$if FPC_FULLVERSION<30000}
+      {$if FPC_FULLVERSION<=30000}
       aValue:=GetPropValue(O,PI^.Name,True);
       {$else}
       aValue:=GetPropValue(O,PI,True);

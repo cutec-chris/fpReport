@@ -165,7 +165,7 @@
         <Type Value="LFM"/>
       </Item38>
     </Files>
-    <RequiredPkgs Count="4">
+    <RequiredPkgs Count="3">
       <Item1>
         <PackageName Value="SynEdit"/>
       </Item1>
@@ -175,9 +175,6 @@
       <Item3>
         <PackageName Value="RunTimeTypeInfoControls"/>
       </Item3>
-      <Item4>
-        <PackageName Value="FCL"/>
-      </Item4>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

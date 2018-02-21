@@ -20,16 +20,10 @@
         <UnitName Value="frmideselectreportdata"/>
       </Item2>
     </Files>
-    <RequiredPkgs Count="3">
+    <RequiredPkgs Count="1">
       <Item1>
         <PackageName Value="lazfpreportdesign"/>
       </Item1>
-      <Item2>
-        <PackageName Value="lclfpreport"/>
-      </Item2>
-      <Item3>
-        <PackageName Value="FCL"/>
-      </Item3>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

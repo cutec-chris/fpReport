@@ -10721,6 +10721,7 @@ var
   lDetailBandList: TBandList;
   lData: TFPReportData;
   i: integer;
+  a: Integer;
 
 begin
   if AMasterBand = nil then
@@ -10749,11 +10750,11 @@ begin
         begin
         lData.Open;
         Report.InitializeExpressionVariables(Pages[RTCurDsgnPageIdx], lData);
+        for a := 0 to Report.ReportData.Count-1 do
+          Report.InitializeExpressionVariables(Pages[RTCurDsgnPageIdx], Report.ReportData.Data[a].Data);
         Report.CacheMemoExpressions(RTCurDsgnPageIdx, lData);
-        for i := 0 to Report.ReportData.Count-1 do
-          Report.InitializeExpressionVariables(Pages[RTCurDsgnPageIdx], Report.ReportData.Data[i].Data);
-        for i := 0 to Report.ReportData.Count-1 do
-          Report.CacheMemoExpressions(RTCurDsgnPageIdx, Report.ReportData.Data[i].Data);
+        for a := 0 to Report.ReportData.Count-1 do
+          Report.CacheMemoExpressions(RTCurDsgnPageIdx, Report.ReportData.Data[a].Data);
         end;
       lData.First;
       if (not lData.EOF) and (lDsgnDetailBand.HeaderBand <> nil) then
@@ -10947,6 +10948,7 @@ procedure TFPReportLayouter.RunDataLoop(aPageIdx: Integer;
 Var
   I : integer;
   lBand : TFPReportCustomBand;
+  a: Integer;
 
 begin
   if Assigned(aPageData) then
@@ -10956,7 +10958,11 @@ begin
     if IsFirstPass then
       begin
       Report.InitializeExpressionVariables(Pages[aPageIdx], aPageData);
+      for a := 0 to Report.ReportData.Count-1 do
+        Report.InitializeExpressionVariables(Pages[RTCurDsgnPageIdx], Report.ReportData.Data[a].Data);
       Report.CacheMemoExpressions(aPageIdx, aPageData);
+      for a := 0 to Report.ReportData.Count-1 do
+        Report.CacheMemoExpressions(RTCurDsgnPageIdx, Report.ReportData.Data[a].Data);
       end;
     aPageData.First;
     end;

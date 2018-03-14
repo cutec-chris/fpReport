@@ -110,7 +110,7 @@ type
   TFPReportFrameLine      = (flTop, flBottom, flLeft, flRight);
   TFPReportFrameLines     = set of TFPReportFrameLine;
   TFPReportFrameShape     = (fsNone, fsRectangle, fsRoundedRect, fsDoubleRect, fsShadow);
-  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream);
+  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream, rfkMemoStream);
   TFPReportStretchMode    = (smDontStretch, smActualHeight, smMaxHeight);
   TFPReportHTMLTag        = (htRegular, htBold, htItalic);
   TFPReportHTMLTagSet     = set of TFPReportHTMLTag;
@@ -5568,7 +5568,7 @@ procedure TFPReportCustomGroupHeaderBand.Validate(aErrors: TStrings);
 begin
   inherited Validate(aErrors);
   If (GroupCondition='') then
-    aErrors.Add(SErrEmptyGroupExpression,[Name]);
+    aErrors.Add(Format(SErrEmptyGroupExpression,[Name]));
 end;
 
 procedure TFPReportCustomGroupHeaderBand.Assign(Source: TPersistent);
@@ -5837,7 +5837,9 @@ begin
     On E : EComponentError do
       begin
       Name:=AllocateName;
+      {$if FPC_FULLVERSION>30000}
       AReader.Modified;
+      {$endif}
       end;
   end;
 end;
@@ -8766,7 +8768,7 @@ procedure TFPReportCustomBandWithData.Validate(aErrors: TStrings);
 begin
   inherited Validate(aErrors);
   if (Data=Nil) then
-    aErrors.Add('Band "%s" has no data assigned.',[Name]);
+    aErrors.Add(Format('Band "%s" has no data assigned.',[Name]));
 end;
 
 { TFPReportCustomGroupFooterBand }

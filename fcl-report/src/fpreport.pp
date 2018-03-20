@@ -5883,7 +5883,7 @@ begin
     On E : EComponentError do
       begin
       Name:=AllocateName;
-      {$IF FPC_FULLVERSION>=30000}
+      {$IF FPC_FULLVERSION>=30400}
       AReader.Modified;
       {$endif}
       end;

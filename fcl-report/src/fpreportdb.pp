@@ -22,10 +22,15 @@ uses
   Classes, SysUtils, fpreport, db;
 
 Type
+
+  { TFPReportDatasetData }
+
   TFPReportDatasetData = class(TFPReportData)
   private
     FDataSet: TDataSet;
+    procedure SetDataSet(AValue: TDataSet);
   protected
+    Procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure DoGetValue(const AFieldName: string; var AValue: variant); override;
     procedure DoInitDataFields; override;
     procedure DoOpen; override;
@@ -35,8 +40,10 @@ Type
     function  DoEOF: boolean; override;
   Public
     property  DataFields;
+    Procedure StartDesigning; override;
+    Procedure EndDesigning; override;
   published
-    property  DataSet: TDataSet read FDataSet write FDataSet;
+    property  DataSet: TDataSet read FDataSet write SetDataSet;
   end;
 
 implementation
@@ -48,10 +55,26 @@ resourcestring
 
 { TFPReportDatasetData }
 
+procedure TFPReportDatasetData.SetDataSet(AValue: TDataSet);
+begin
+  if FDataSet=AValue then Exit;
+  if Assigned(FDataset) then
+    FDataset.RemoveFreeNotification(Self);
+  FDataSet:=AValue;
+  if Assigned(FDataset) then
+    FDataset.FreeNotification(Self);
+end;
+
+procedure TFPReportDatasetData.Notification(AComponent: TComponent; Operation: TOperation);
+begin
+  inherited Notification(AComponent, Operation);
+  if (Operation=opRemove) and (AComponent=FDataset) then
+    FDataset:=Nil;
+end;
+
 procedure TFPReportDatasetData.DoGetValue(const AFieldName: string; var AValue: variant);
 var
   ms: TMemoryStream;
-  ss: TStringStream;
 begin
   inherited DoGetValue(AFieldName, AValue);
   try
@@ -91,7 +114,7 @@ var
       ftWord:           Result := rfkInteger;
       ftBoolean:        Result := rfkBoolean;
       ftFloat:          Result := rfkFloat;
-      ftCurrency:       Result := rfkFloat;
+      ftCurrency:       Result := rfkCurrency;
       ftBCD:            Result := rfkFloat;
       ftDate:           Result := rfkDateTime;
       ftTime:           Result := rfkDateTime;
@@ -100,7 +123,7 @@ var
       ftVarBytes:       Result := rfkStream;
       ftAutoInc:        Result := rfkInteger;
       ftBlob:           Result := rfkStream;
-      ftMemo:           Result := rfkMemoStream;
+      ftMemo:           Result := rfkStream;
       ftGraphic:        Result := rfkStream;
       ftFmtMemo:        Result := rfkString;
       //ftParadoxOle:
@@ -183,5 +206,22 @@ begin
   Result := FDataSet.EOF;
 end;
 
+procedure TFPReportDatasetData.StartDesigning;
+begin
+  Inherited;
+  if Assigned(DataSet) then
+    // Dirty hack!!
+    TFPReportDatasetData(Dataset).SetDesigning(True,True);
+end;
+
+procedure TFPReportDatasetData.EndDesigning;
+begin
+  if Assigned(DataSet) then
+    // Dirty hack!!
+    TFPReportDatasetData(Dataset).SetDesigning(False,True);
+  Inherited;
+end;
+
 end.
+
 

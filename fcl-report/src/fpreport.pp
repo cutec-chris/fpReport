@@ -110,7 +110,7 @@ type
   TFPReportFrameLine      = (flTop, flBottom, flLeft, flRight);
   TFPReportFrameLines     = set of TFPReportFrameLine;
   TFPReportFrameShape     = (fsNone, fsRectangle, fsRoundedRect, fsDoubleRect, fsShadow);
-  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream, rfkMemoStream);
+  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream, rfkCurrency, rfkMemoStream);
   TFPReportStretchMode    = (smDontStretch, smActualHeight, smMaxHeight);
   TFPReportHTMLTag        = (htRegular, htBold, htItalic);
   TFPReportHTMLTagSet     = set of TFPReportHTMLTag;
@@ -695,6 +695,7 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     Function CreatePropertyHash : String; virtual;
+    function ExpressionResultToString(const Res: TFPExpressionResult): String; virtual;
     function Equals(AElement: TFPReportElement): boolean; virtual; reintroduce;
     procedure WriteElement(AWriter: TFPReportStreamer; AOriginal: TFPReportElement = nil); override;
     procedure ReadElement(AReader: TFPReportStreamer); override;
@@ -1400,6 +1401,7 @@ type
     FResetValueExpressionNode: TFPExprNode;
     procedure CheckType(aType: TResultType);
     function GetAsBoolean: Boolean;
+    function GetAsCurrency: Currency;
     function GetAsDateTime: TDateTime;
     function GetAsFloat: TexprFloat;
     function GetAsInteger: Int64;
@@ -1408,6 +1410,7 @@ type
     function GetER: TFPExpressionResult;
     function GetValue: String;
     procedure SetAsBoolean(AValue: Boolean);
+    procedure SetAsCurrency(AValue: Currency);
     procedure SetAsDateTime(AValue: TDateTime);
     procedure SetAsFloat(AValue: TExprFloat);
     procedure SetAsInteger(AValue: Int64);
@@ -1435,6 +1438,7 @@ type
     Property AsInteger : Int64 Read GetAsInteger Write SetAsInteger;
     Property AsBoolean : Boolean Read GetAsBoolean Write SetAsBoolean;
     Property AsFloat : TExprFloat Read GetAsFloat Write SetAsFloat;
+    Property AsCurrency : Currency Read GetAsCurrency Write SetAsCurrency;
     Property AsDateTime : TDateTime Read GetAsDateTime Write SetAsDateTime;
   Published
     Property Name : String Read FName Write SetName;
@@ -1500,6 +1504,7 @@ type
     FUsePageCountMarker: Boolean;
     FVariables : TFPReportVariables;
     FDataAdded : TFPList;
+    procedure BuiltinGetFieldIsNull(var Result: TFPExpressionResult; const Args: TExprParameterArray);
     function GetPage(AIndex: integer): TFPReportCustomPage;
     function GetPageCount: integer; { this is designer page count }
     function GetRenderedPageCount: integer;
@@ -1515,7 +1520,7 @@ type
     { checks if children are visble, removes children if needed, and recalc Band.Layout bounds }
     procedure EmptyRTObjects;
     procedure ClearDataBandLastTextValues(ABand: TFPReportCustomBandWithData);
-    procedure ProcessAggregates(const APageIdx: integer; const AData: TFPReportData);
+    procedure ProcessAggregates(APage : TFPReportCustomPage; const AData: TFPReportData);
 
     { these three methods are used to resolve references while reading a report from file. }
     procedure ClearReferenceList;
@@ -1532,7 +1537,6 @@ type
     procedure RTBeginUsePrevVariableValues;
     procedure RTEndUsePrevVariableValues;
   protected
-    FBands: TBandList;
     class function IsStringValueZero(const AValue: string): boolean; virtual;
     function CreateVariables: TFPReportVariables; virtual;
     function CreateImages: TFPReportImages; virtual;
@@ -1544,8 +1548,9 @@ type
     procedure DoBeginReport; virtual;
     procedure DoEndReport; virtual;
     procedure InitializeDefaultExpressions; virtual;
-    procedure InitializeExpressionVariables(const APage: TFPReportCustomPage;   const AData: TFPReportData); virtual;
-    procedure CacheMemoExpressions(const APageIdx: integer; const AData: TFPReportData); virtual;
+    procedure InitializeExpressionVariables; virtual;
+    procedure InitializePageAggregateData(const APage: TFPReportCustomPage; const AData: TFPReportData); virtual;
+    procedure CacheMemoExpressions(const APage: TFPReportCustomPage); virtual;
     procedure StartRender; override;
     procedure EndRender; override;
     // stores object instances for and during layouting
@@ -1562,6 +1567,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
+    class function ReportKindToResultType(const AType: TFPReportFieldKind): TResultType;
     Procedure Clear;
     Procedure SaveDataToNames;
     Procedure RestoreDataFromNames;
@@ -1578,7 +1584,7 @@ type
     Procedure StartDesigning; virtual;
     Procedure EndDesigning; virtual;
     procedure RenderReport(const AExporter: TFPReportExporter);
-    procedure   AddBuiltinsToExpressionIdentifiers(Idents: TFPExprIdentifierDefs); virtual;
+    procedure AddBuiltinsToExpressionIdentifiers(Idents: TFPExprIdentifierDefs); virtual;
     Property Variables : TFPReportVariables Read FVariables Write SetVariables;
     Property ExpressionParser : TFPExpressionParser Read FExpr;
     {$IFDEF gdebug}
@@ -1608,6 +1614,14 @@ type
     property OnBeforeRenderReport;
     property OnBeginReport;
     property OnEndReport;
+  end;
+
+  TFPReportCustomDataManager = Class(TComponent)
+  Public
+    procedure WriteElement(AWriter: TFPReportStreamer); virtual; abstract;
+    procedure ReadElement(AReader: TFPReportStreamer); virtual; abstract;
+    Procedure ApplyToReport(aReport : TFPCustomReport; AErrors: TStrings); virtual; abstract;
+    Procedure RemoveFromReport(aReport : TFPCustomReport); virtual; abstract;
   end;
 
 
@@ -1647,19 +1661,21 @@ type
     FRTPage: TFPReportCustomPage;
     FCurrentRTColumnFooterBand: TFPReportCustomColumnFooterBand;
     FDataLevelStack: UInt8;
-    procedure ClearBandList;
+    FBands: TBandList;
     function GetPage(AIndex: integer): TFPReportCustomPage;
     function GetRTCurDsgnPageIdx: Integer;
     function GetPerDesignerPageCount(Index : Cardinal): Cardinal;
     function GetRTCurPageIdx: Integer;
     function GetRTIsLastColumn: Boolean;
     function GetRTObjects: TFPList;
+    procedure HandleDataHeaderBands;
     procedure SetGetPerDesignerPageCount(Index : Cardinal; AValue: Cardinal);
     Function GetPageNumberPerDesignerPage : Integer;
     procedure SetRTCurDsgnPageIdx(pPageIdx: Integer);
     Procedure SetPageNumberPerDesignerPage(aValue : Integer);
     function FooterSpaceNeeded: TFPReportUnits;
   protected
+    procedure ClearBandList;
     procedure RemoveBandsFromPage(aList: TBandList); virtual;
     function HandleOverflowedBands(aHandledBands: TBandList; aBand: TFPReportCustomBand; var aRTBand: TFPReportCustomBand): TOverFlowAction; virtual;
     procedure CheckNewOrOverFlow(CheckMulticolumn: Boolean = True); virtual;
@@ -1715,6 +1731,9 @@ type
     property RTIsLastColumn: Boolean read GetRTIsLastColumn;
     Property PageNumberPerDesignerPage : Integer Read GetPageNumberPerDesignerPage Write SetPageNumberPerDesignerPage;
   Public
+    Constructor Create(aOwner : TComponent); override;
+    Destructor Destroy; override;
+
     Procedure Execute(aReport : TFPCustomReport);
     Property Report : TFPCustomReport Read FMyReport;
   end;
@@ -2118,7 +2137,6 @@ type
     property    Count: Integer read GetCount;
     property    Items[AIndex: Integer]: TFPReportCustomBand read GetItems write SetItems; default;
   end;
-
 
   { TFPReportExportManager }
 
@@ -2898,6 +2916,7 @@ procedure TFPReportVariable.SetValue(AValue: String);
 Var
   C : Integer;
   f : TExprFloat;
+  CC : Currency;
 
 begin
   if GetValue=AValue then
@@ -2912,6 +2931,13 @@ begin
                      raise EConvertError.CreateFmt(
                        SErrInvalidFloatingPointValue, [AValue]);
                    ASFloat:=F;
+                   end;
+      rtCurrency : begin
+                   Val(AValue,CC,C);
+                   if C<>0 then
+                     raise EConvertError.CreateFmt(
+                       SErrInvalidFloatingPointValue, [AValue]);
+                   AsCurrency:=CC;
                    end;
       rtDateTime : asDateTime:=ISO8601ToDateTime(AValue);
       rtString   : AsString:=AValue;
@@ -2986,6 +3012,7 @@ begin
     rtBoolean  : Result:=BoolToStr(AsBoolean,True);
     rtInteger  : Result:=IntToStr(AsInteger);
     rtFloat    : Str(AsFloat,Result);
+    rtCurrency : Str(AsCurrency,Result);
     rtDateTime : Result:=DateTimeToISO8601(AsDateTime);
     rtString   : Result:=AsString
   else
@@ -3018,6 +3045,14 @@ function TFPReportVariable.GetAsBoolean: Boolean;
 begin
   CheckType(rtBoolean);
   Result:=FValue.Resboolean;
+end;
+
+function TFPReportVariable.GetAsCurrency: Currency;
+begin
+  CheckType(rtCurrency);
+  {$IF FPC_FULLVERSION>=30101}
+  Result:=FValue.ResCurrency;
+  {$endif}
 end;
 
 function TFPReportVariable.GetAsDateTime: TDateTime;
@@ -3059,6 +3094,14 @@ procedure TFPReportVariable.SetAsBoolean(AValue: Boolean);
 begin
   FValue.ResultType:=rtBoolean;
   FValue.resBoolean:=AValue;
+end;
+
+procedure TFPReportVariable.SetAsCurrency(AValue: Currency);
+begin
+  FValue.ResultType:=rtCurrency;
+  {$IF FPC_FULLVERSION>=30101}
+  FValue.ResCurrency:=AValue;
+  {$endif}
 end;
 
 procedure TFPReportVariable.SetAsDateTime(AValue: TDateTime);
@@ -4242,12 +4285,14 @@ begin
 end;
 
 procedure TFPReportCustomMemo.ParseText;
+
 var
   lCount: integer;
   n: TFPExprNode;
   i: integer;
   str: string;
   lStartPos: integer;
+
 begin
   { clear array and then set the correct array size }
   ClearExpressionNodes;
@@ -4255,9 +4300,7 @@ begin
     lCount := TokenCount(Text)-1
   else
     exit;
-
   SetLength(ExpressionNodes, lCount);
-
   str := '';
   n := nil;
   for i := 1 to lCount do
@@ -4551,13 +4594,7 @@ begin
       if IsExprAtArrayPos(lStartPos) then
       begin
         n := Original.ExpressionNodes[i].ExprNode;
-        case n.NodeValue.ResultType of
-          rtString  : s := n.NodeValue.ResString;
-          rtInteger : s := IntToStr(n.NodeValue.ResInteger);
-          rtFloat   : s := FloatToStr(n.NodeValue.ResFloat);
-          rtBoolean : s := BoolToStr(n.NodeValue.ResBoolean, True);
-          rtDateTime : s := FormatDateTime('yyyy-mm-dd', n.NodeValue.ResDateTime);
-        end;
+        S:=ExpressionResultToString(n.NodeValue);
         lResult := StringReplace(lResult, '[' + str + ']', s, [rfReplaceAll]);
       end;
     end;
@@ -4588,28 +4625,37 @@ Var
   I : integer;
   N : TFPExprNode;
 
+  Procedure CheckVisibility;
+
+  begin
+    // visibility handling
+    if (moHideZeros in m.Options) then
+      begin
+      m.Visible:=Not TFPCustomReport.IsStringValueZero(m.Text);
+      if not M.Visible then
+        exit;
+      end;
+    if (moSuppressRepeated in m.Options) then
+      begin
+      m.Visible:=m.Original.FLastText <> m.Text;
+      if not M.Visible then
+        exit;
+      m.Original.FLastText := m.Text;
+      end;
+  end;
+
 begin
   Result:=Inherited PrepareObject(aRTParent);
   if Result=Nil then
     exit;
   m:=TFPReportCustomMemo(Result);
   if moDisableExpressions in m.Options then
+    begin
+    CheckVisibility;
     Exit; // nothing further to do
+    end;
   m.ExpandExpressions;
-  // visibility handling
-  if (moHideZeros in m.Options) then
-    begin
-    m.Visible:=Not TFPCustomReport.IsStringValueZero(m.Text);
-    if not M.Visible then
-      exit;
-    end;
-  if (moSuppressRepeated in m.Options) then
-    begin
-    m.Visible:=m.Original.FLastText <> m.Text;
-    if not M.Visible then
-      exit;
-    m.Original.FLastText := m.Text;
-    end;
+  CheckVisibility;
   // aggregate handling
   for I := 0 to Length(m.Original.ExpressionNodes)-1 do
     begin
@@ -5837,7 +5883,7 @@ begin
     On E : EComponentError do
       begin
       Name:=AllocateName;
-      {$if FPC_FULLVERSION>30000}
+      {$IF FPC_FULLVERSION>=30000}
       AReader.Modified;
       {$endif}
       end;
@@ -6585,6 +6631,22 @@ begin
   Result:='yyyy-mm-dd';
 end;
 
+
+function TFPReportElement.ExpressionResultToString(const Res : TFPExpressionResult): String;
+
+begin
+  case Res.ResultType of
+    rtString  : Result := Res.ResString;
+    rtInteger : Result := IntToStr(Res.ResInteger);
+    rtFloat   : Result := FloatToStr(Res.ResFloat);
+    {$IF FPC_FULLVERSION>=30101}
+    rtCurrency  : Result := CurrToStr(Res.ResCurrency);
+    {$endif}
+    rtBoolean : Result := BoolToStr(Res.resBoolean, True);
+    rtDateTime : Result := FormatDateTime(GetDateTimeFormat, Res.resDateTime);
+  end;
+end;
+
 function TFPReportElement.EvaluateExpressionAsText(const AExpr: String): String;
 
 Var
@@ -6593,13 +6655,7 @@ Var
 begin
   Result:='';
   if EvaluateExpression(AExpr,Res) then
-    case Res.ResultType of
-      rtString  : Result := Res.ResString;
-      rtInteger : Result := IntToStr(Res.ResInteger);
-      rtFloat   : Result := FloatToStr(Res.ResFloat);
-      rtBoolean : Result := BoolToStr(Res.resBoolean, True);
-      rtDateTime : Result := FormatDateTime(GetDateTimeFormat, Res.resDateTime);
-    end;
+    Result:=ExpressionResultToString(Res);
 end;
 
 
@@ -7224,7 +7280,9 @@ end;
 function TFPReportCustomPage.GetBand(AIndex: integer): TFPReportCustomBand;
 begin
   if Assigned(FBands) then
-    Result := TFPReportCustomBand(FBands[AIndex]);
+    Result := TFPReportCustomBand(FBands[AIndex])
+  else
+    Raise EListError.CreateFmt(SErrInvalidChildIndex,[aIndex]);
 end;
 
 function TFPReportCustomPage.GetBandCount: integer;
@@ -7371,25 +7429,55 @@ end;
 procedure TFPCustomReport.BuiltinGetInRepeatedGroupHeader(
   var Result: TFPExpressionResult; const Args: TExprParameterArray);
 begin
+  Result.ResultType:=rtBoolean;
   Result.ResBoolean := FRTInRepeatedGroupHeader;
 end;
 
 procedure TFPCustomReport.BuiltInGetInIntermediateGroupFooter(
   var Result: TFPExpressionResult; const Args: TExprParameterArray);
 begin
+  Result.ResultType:=rtBoolean;
   Result.ResBoolean := FRTInIntermediateGroupFooter;
 end;
 
 procedure TFPCustomReport.BuiltinGetIsOverflowed(
   var Result: TFPExpressionResult; const Args: TExprParameterArray);
 begin
+  Result.ResultType:=rtBoolean;
   Result.ResBoolean := FRTIsOverflowed;
 end;
 
 procedure TFPCustomReport.BuiltinGetIsGroupDetailsPrinted(
   var Result: TFPExpressionResult; const Args: TExprParameterArray);
 begin
+  Result.ResultType:=rtBoolean;
   Result.ResBoolean := FRTGroupDetailsPrinted;
+end;
+
+
+procedure TFPCustomReport.BuiltinGetFieldIsNull(var Result: TFPExpressionResult; const Args: TExprParameterArray);
+
+Var
+  DN,FN : String;
+  I : Integer;
+  RD : TFPReportData;
+
+begin
+  Result.ResultType:=rtBoolean;
+  Result.ResBoolean := True;
+  FN:=Args[0].ResString;
+  DN:='';
+  I:=Pos('.',FN);
+  if I>0 then
+    begin
+    DN:=Copy(FN,1,I-1);
+    Delete(FN,1,I);
+    end;
+  RD:=ReportData.FindReportData(DN);
+  if (DN='') and (ReportData.Count=1) then
+    RD:=ReportData[0].Data;
+  if Assigned(RD) and (RD.IndexOfField(FN)<>-1) then
+    Result.ResBoolean:=VarIsNull(RD.FieldValues[FN]);
 end;
 
 
@@ -7418,30 +7506,16 @@ begin
   end;
 end;
 
-Function NodeValueAsString(Res : TFPExpressionResult) : String;
-begin
-  case res.ResultType of
-    rtString  : Result := res.ResString;
-    rtInteger : Result := IntToStr(res.ResInteger);
-    rtFloat   : Result := FloatToStr(res.ResFloat);
-    rtBoolean : Result := BoolToStr(res.ResBoolean, True);
-    rtDateTime : Result := FormatDateTime('yyyy-mm-dd', res.ResDateTime);
-  end;
-end;
 
-
-procedure TFPCustomReport.ProcessAggregates(const APageIdx: integer; const AData: TFPReportData);
-
+procedure TFPCustomReport.ProcessAggregates(APage : TFPReportCustomPage; const AData: TFPReportData);
 
 var
   i: integer;
-  P : TFPReportCustomPage;
 
 begin
-  P:=Pages[APageIdx];
-  for I := 0 to P.BandCount-1 do
-    if P.Bands[I] is TFPReportCustomBandWithData then
-      TFPReportCustomBandWithData(P.Bands[I]).ProcessAggregates(AData);
+  for I := 0 to aPage.BandCount-1 do
+    if (aPage.Bands[I] is TFPReportCustomBandWithData) then
+      TFPReportCustomBandWithData(aPage.Bands[I]).ProcessAggregates(AData);
 end;
 
 procedure TFPCustomReport.ClearReferenceList;
@@ -7567,17 +7641,14 @@ Var
 
 begin
   FPageCount:=0;
-  FBands:=Nil;
   L:=CreateLayouter;
   try
     FDataAdded:=TFPList.Create;
-    FBands:=TBandList.Create;
     SetLength(FPerDesignerPageCount, PageCount);
     L.Execute(Self);
   finally
     SetLength(FPerDesignerPageCount, 0);
     FreeAndNil(FDataAdded);
-    FreeAndNil(Fbands);
     L.Free;
   end;
 end;
@@ -7618,6 +7689,7 @@ begin
   Idents.AddFunction('InIntermediateGroupFooter', 'B', '', @BuiltInGetInIntermediateGroupFooter);
   Idents.AddFunction('IsOverflowed', 'B', '', @BuiltInGetIsOverflowed);
   Idents.AddFunction('IsGroupDetailPrinted', 'B', '', @BuiltinGetIsGroupDetailsPrinted);
+  Idents.AddFunction('FieldIsNull', 'B', 'S', @BuiltinGetFieldIsNull);
 end;
 
 procedure TFPCustomReport.InitializeDefaultExpressions;
@@ -7650,7 +7722,7 @@ begin
     FExpr.Identifiers.AddFunction('PageCount', 'I', '', @BuiltinGetPageCount);
 end;
 
-procedure TFPCustomReport.InitializeExpressionVariables(const APage: TFPReportCustomPage; const AData: TFPReportData);
+procedure TFPCustomReport.InitializePageAggregateData(const APage: TFPReportCustomPage; const AData: TFPReportData);
 
 var
   i: Integer;
@@ -7660,111 +7732,127 @@ var
   v: TFPReportVariable;
   df: TFPReportDataField;
 
-  function ReportKindToResultType(const AType: TFPReportFieldKind): TResultType;
-  begin
-    case AType of
-      rfkString:      Result := rtString;
-      rfkBoolean:     Result := rtBoolean;
-      rfkInteger:     Result := rtInteger;
-      rfkFloat:       Result := rtFloat;
-      rfkDateTime:    Result := rtDateTime;
-      rfkStream:      Result := rtString; //  TODO:  What do we do here?????
-      else
-        Result := rtString;
-    end;
-  end;
-
 begin
-  {$ifdef gdebug}
-  writeln('********** TFPCustomReport.InitializeExpressionVariables');
-  {$endif}
-  F:='';
-  For I:=0 to FExpr.Identifiers.Count-1 do
-    f:=f+FExpr.Identifiers[i].Name+'; ';
-  if FDataAdded.IndexOf(AData)=-1 then
-  begin
-    for i := 0 to AData.DataFields.Count-1 do
+  // Sanity check
+  if Not (APage.Data = AData) then
+    exit;
+  For I:=0 to FVariables.Count-1 do
     begin
-      d := AData.Name;
-      df := AData.DataFields[i];
-      f := df.FieldName;
-      df.OnGetUsePrevValue := @DoGetUsePrevValue;
-      r := ReportKindToResultType(df.FieldKind);
-      if d <> '' then
+    v:=FVariables[I];
+    v.ReleaseExpressionNodes;
+    if v.Expression<>'' then
       begin
-        {$ifdef gdebug}
-        writeln('registering (dotted name)... '+ d+'.'+f);
-        {$endif}
-        df.ExprIdentierDef := FExpr.Identifiers.AddVariable(d+'.'+f, r, @df.GetRTValue);
-      end
-      else
-      begin
-        {$ifdef gdebug}
-        writeln('registering... '+ f);
-        {$endif}
-        df.ExprIdentierDef := FExpr.Identifiers.AddVariable(f, r, @df.GetRTValue);
-      end;
-    end;
-    FDataAdded.Add(AData);
-  end;
-  if APage.Data = AData then
-  begin
-    For I:=0 to FVariables.Count-1 do
-    begin
-      v:=FVariables[I];
-      v.ReleaseExpressionNodes;
-      if v.Expression<>'' then
-      begin
-        FExpr.Expression:=v.Expression;
-        FExpr.ExtractNode(v.FExpressionNode);
-        v.FIsAggregate:=v.FExpressionNode.IsAggregate;
-        if v.FExpressionNode.HasAggregate and
-        not v.FExpressionNode.IsAggregate then
-          raise EReportError.CreateFmt(SErrExprVarisbleAggregateOnWrongLevel, [v.FExpressionNode.AsString]);
-        if not v.FIsAggregate then begin
-          v.FResetType:=rtNone;
-          v.FResetValueExpression:='';
+      FExpr.Expression:=v.Expression;
+      FExpr.ExtractNode(v.FExpressionNode);
+      v.FIsAggregate:=v.FExpressionNode.IsAggregate;
+      if v.FExpressionNode.HasAggregate and
+      not v.FExpressionNode.IsAggregate then
+        raise EReportError.CreateFmt(SErrExprVarisbleAggregateOnWrongLevel, [v.FExpressionNode.AsString]);
+      if not v.FIsAggregate then
+        begin
+        v.FResetType:=rtNone;
+        v.FResetValueExpression:='';
         end;
       end;
-      if v.ResetValueExpression<>'' then
+    if v.ResetValueExpression<>'' then
       begin
-        FExpr.Expression := v.ResetValueExpression;
-        FExpr.ExtractNode(v.FResetValueExpressionNode);
+      FExpr.Expression := v.ResetValueExpression;
+      FExpr.ExtractNode(v.FResetValueExpressionNode);
       end;
     end;
-    For I:=0 to FVariables.Count-1 do
+  For I:=0 to FVariables.Count-1 do
     begin
-      v:=FVariables[I];
-      if v.Expression<>'' then
-        FExpr.Identifiers.AddVariable(v.Name, v.DataType, @v.GetRTExpressionValue);
+    v:=FVariables[I];
+    if v.Expression<>'' then
+      FExpr.Identifiers.AddVariable(v.Name, v.DataType, @v.GetRTExpressionValue);
     end;
+end;
+
+
+Class function TFPCustomReport.ReportKindToResultType(const AType: TFPReportFieldKind): TResultType;
+begin
+  case AType of
+    rfkString:      Result := rtString;
+    rfkBoolean:     Result := rtBoolean;
+    rfkInteger:     Result := rtInteger;
+    rfkFloat:       Result := rtFloat;
+    rfkCurrency:     Result := rtCurrency;
+    rfkDateTime:    Result := rtDateTime;
+    rfkStream:      Result := rtString; //  TODO:  What do we do here?????
+  else
+    Result := rtString;
   end;
 end;
 
-procedure TFPCustomReport.CacheMemoExpressions(const APageIdx: integer; const AData: TFPReportData);
+procedure TFPCustomReport.InitializeExpressionVariables;
+
+var
+  i,j: Integer;
+  f: string;
+  r: TResultType;
+  d: string;
+  v: TFPReportVariable;
+  df: TFPReportDataField;
+  aData : TFPReportData;
+
+begin
+  For J:=0 to ReportData.Count-1 do
+    begin
+    aData:=ReportData[J].Data;
+    {$ifdef gdebug}
+    writeln('********** TFPCustomReport.InitializeExpressionVariables');
+    {$endif}
+    F:='';
+    For i:=0 to FExpr.Identifiers.Count-1 do
+      f:=f+FExpr.Identifiers[i].Name+'; ';
+    if FDataAdded.IndexOf(AData)=-1 then
+      begin
+      for i := 0 to AData.DataFields.Count-1 do
+        begin
+        d := AData.Name;
+        df := AData.DataFields[i];
+        f := df.FieldName;
+        df.OnGetUsePrevValue := @DoGetUsePrevValue;
+        r := ReportKindToResultType(df.FieldKind);
+        if d <> '' then
+          begin
+          {$ifdef gdebug}
+          writeln('registering (dotted name)... '+ d+'.'+f);
+          {$endif}
+          df.ExprIdentierDef := FExpr.Identifiers.AddVariable(d+'.'+f, r, @df.GetRTValue);
+          end
+        else
+          begin
+          {$ifdef gdebug}
+          writeln('registering... '+ f);
+          {$endif}
+          df.ExprIdentierDef := FExpr.Identifiers.AddVariable(f, r, @df.GetRTValue);
+          end;
+        end;
+      FDataAdded.Add(AData);
+      end;
+   end;
+end;
+
+procedure TFPCustomReport.CacheMemoExpressions(const APage: TFPReportCustomPage);
+
 var
   b: integer;
   c: integer;
   m: TFPReportCustomMemo;
-begin
-  for b := 0 to Pages[APageIdx].BandCount-1 do
-  begin
-    if Pages[APageIdx].Bands[b] is TFPReportCustomBandWithData then
-    begin
-      if TFPReportCustomBandWithData(Pages[APageIdx].Bands[b]).Data <> AData then
-        Continue;  // band is from a different data-loop
-    end;
 
-    for c := 0 to Pages[APageIdx].Bands[b].ChildCount-1 do
-      if Pages[APageIdx].Bands[b].Child[c] is TFPReportCustomMemo then
-      begin
-        m := TFPReportCustomMemo(Pages[APageIdx].Bands[b].Child[c]);
+begin
+  for b := 0 to aPage.BandCount-1 do
+    for c := 0 to aPage.Bands[b].ChildCount-1 do
+      if aPage.Bands[b].Child[c] is TFPReportCustomMemo then
+        begin
+        m := TFPReportCustomMemo(aPage.Bands[b].Child[c]);
         m.ParseText;
-      end;
-  end; { bands }
+        end;
 end;
 
 constructor TFPCustomReport.Create(AOwner: TComponent);
+
 begin
   inherited Create(AOwner);
   FReportData:=CreateReportData;
@@ -8002,6 +8090,7 @@ begin
       E := AReader.FindChild('Variables');
       if Assigned(E) then
       begin
+        Variables.Clear;
         AReader.PushElement(E);
         for i := 0 to AReader.ChildCount-1 do
         begin
@@ -8461,7 +8550,14 @@ begin
 end;
 
 procedure TFPReportCustomBand.RecalcLayout;
+
+Var
+  I : Integer;
+
 begin
+  For I:=ChildCount-1 downto 0 do
+    if Not Child[i].EvaluateVisibility then
+      RemoveChild(Child[i]);
   inherited RecalcLayout;
   if StretchMode <> smDontStretch then
     ApplyStretchMode;
@@ -9661,6 +9757,9 @@ procedure TFPReportDataField.GetRTValue(Var Result: TFPExpressionResult;
           rtBoolean:    Result.ResBoolean   := False;
           rtInteger:    Result.ResInteger   := 0;
           rtFloat:      Result.ResFloat     := 0.0;
+          {$IF FPC_FULLVERSION>=30101}
+          rtCurrency:   Result.ResCurrency  := 0.0;
+          {$endif}
           rtDateTime:   Result.ResDateTime  := 0.0;
           rtString:     Result.ResString    := '';
         end
@@ -9669,6 +9768,9 @@ procedure TFPReportDataField.GetRTValue(Var Result: TFPExpressionResult;
           rtBoolean:    Result.ResBoolean   := pValue;
           rtInteger:    Result.ResInteger   := pValue;
           rtFloat:      Result.ResFloat     := pValue;
+          {$IF FPC_FULLVERSION>=30101}
+          rtCurrency:   Result.ResCurrency  := pValue;
+          {$endif}
           rtDateTime:   Result.ResDateTime  := pValue;
           rtString:     Result.ResString    := pValue;
         end;
@@ -10856,27 +10958,16 @@ begin
       if not lData.IsOpened then
         begin
         lData.Open;
-        Report.InitializeExpressionVariables(lPage, lData);
-        for j := 0 to Report.ReportData.Count-1 do
-          begin
-          oData:=Report.ReportData.Data[j].Data;
-          if Assigned(oData) and (oData<>lData) then
-            Report.InitializeExpressionVariables(lPage, oData);
-          end;
-        Report.CacheMemoExpressions(RTCurDsgnPageIdx, lData);
-        for j := 0 to Report.ReportData.Count-1 do
-          begin
-          oData:=Report.ReportData.Data[j].Data;
-          if Assigned(oData) and (oData<>lData) then
-            Report.CacheMemoExpressions(RTCurDsgnPageIdx, oData);
-          end;
+        // Report.InitializeExpressionVariables;
+        Report.InitializePageAggregateData(lPage,lData);
+        // Report.CacheMemoExpressions(lPage);
         end;
       lData.First;
       if (not lData.EOF) and (lDsgnDetailBand.HeaderBand <> nil) then
         ShowDataHeaderBand(lDsgnDetailBand.HeaderBand);
       while not lData.EOF do
         begin
-        Report.ProcessAggregates(RTCurDsgnPageIdx,lData);
+        Report.ProcessAggregates(lPage,lData);
         Report.Variables.PrepareExpressionValues;
         inc(FDataLevelStack);
         ShowDataBand(lDsgnDetailBand);
@@ -10947,6 +11038,28 @@ begin
   end;
 end;
 
+procedure TFPReportLayouter.HandleDataHeaderBands;
+
+Var
+  D : TFPReportCustomDataBand;
+  i , j: Integer;
+  lBand : TFPReportCustomBand;
+
+begin
+  for I := 0 to FBands.Count-1 do
+    begin
+    lBand := FBands[I];
+    if (lBand is TFPReportCustomDataBand) then
+      begin
+      inc(FDataLevelStack);
+      D:=TFPReportCustomDataBand(lBand);
+      if (D.HeaderBand <> nil) then
+        ShowDataHeaderBand(D.HeaderBand);
+      dec(FDataLevelStack);
+      end;
+    end;
+end;
+
 procedure TFPReportLayouter.HandleDataBands;
 
 Var
@@ -10955,15 +11068,13 @@ Var
   lBand : TFPReportCustomBand;
 
 begin
-  for I := 0 to Report.FBands.Count-1 do
+  for I := 0 to FBands.Count-1 do
   begin
-    lBand := TFPReportCustomBand(Report.FBands[I]);
+    lBand := TFPReportCustomBand(FBands[I]);
     if (lBand is TFPReportCustomDataBand) then
     begin
       inc(FDataLevelStack);
       D:=TFPReportCustomDataBand(lBand);
-      if D.HeaderBand <> nil then
-        ShowDataHeaderBand(D.HeaderBand);
       ShowDataBand(D);
       { set DetailsPrinted in all groups }
       for j := 0 to FGroupHeaderList.Count-1 do
@@ -10997,7 +11108,7 @@ end;
 procedure TFPReportLayouter.ClearBandList;
 
 begin
-  Report.FBands.Clear;
+  FBands.Clear;
 end;
 
 procedure TFPReportLayouter.InitBandList(aPage: TFPReportCustomPage;
@@ -11026,7 +11137,7 @@ begin
         { Do a quick sanity check - we may not have more than one master data band }
         if FFoundDataBand then
           ReportError(SErrMultipleDataBands);
-        Report.FBands.Add(lBand);
+        FBands.Add(lBand);
         FFoundDataBand := True;
         end
       else
@@ -11038,7 +11149,7 @@ begin
         continue; // this is not the toplevel GroupHeader Band.
       if lBand is TFPReportCustomGroupFooterBand then
         continue; // we will get the Footer from the GroupHeaderBand.FooterBand property
-      Report.FBands.Add(aPage.Bands[I]);  { all non-data bands are of interest }
+      FBands.Add(aPage.Bands[I]);  { all non-data bands are of interest }
       end;
 
     if lBand is TFPReportCustomSummaryBand then
@@ -11057,38 +11168,36 @@ begin
     HandleOverflowed;
 end;
 
-procedure TFPReportLayouter.RunDataLoop(aPageIdx: Integer;
-  aPageData: TFPReportData);
+procedure TFPReportLayouter.RunDataLoop(aPageIdx: Integer; aPageData: TFPReportData);
 
 Var
   I : integer;
   lBand : TFPReportCustomBand;
   oData : TFPReportData;
+  lPage : TFPReportCustomPage;
+
 begin
+  lPage:=Pages[aPageIdx];
   if Assigned(aPageData) then
     begin
     if not aPageData.IsOpened then
       aPageData.Open;
-    if IsFirstPass then
+    For I:=0 to Report.ReportData.Count-1 do
       begin
-      Report.InitializeExpressionVariables(Pages[aPageIdx], aPageData);
-      for I := 0 to Report.ReportData.Count-1 do
-        begin
-        oData:=Report.ReportData.Data[i].Data;
-        if Assigned(oData) and (oData<>aPageData) then
-          Report.InitializeExpressionVariables(Pages[RTCurDsgnPageIdx],oData);
-        end;
-      Report.CacheMemoExpressions(aPageIdx, aPageData);
-      for I := 0 to Report.ReportData.Count-1 do
-        begin
-        oData:=Report.ReportData.Data[i].Data;
-        if Assigned(oData) and (oData<>aPageData) then
-          Report.CacheMemoExpressions(RTCurDsgnPageIdx, oData);
-        end;
+      oData:=Report.ReportData[i].Data;
+      if Assigned(oData) and (oData<>aPageData) and (not odata.IsOpened) then
+        oData.Open;
       end;
     aPageData.First;
     end;
-  InitBandList(Pages[aPageIdx],aPageData);
+  if IsFirstPass then
+    begin
+    Report.InitializeExpressionVariables;
+    if Assigned(aPageData) then
+      Report.InitializePageAggregateData(lPage, aPageData);
+    Report.CacheMemoExpressions(lPage);
+    end;
+  InitBandList(lPage,aPageData);
   if Not Assigned(aPageData) then
     StartNewPage
   else
@@ -11098,30 +11207,32 @@ begin
       PrepareRecord;
       if FNewPage then
         StartNewPage;
+      if not FDataHeaderPrinted then
+        HandleDataHeaderBands;
       if FHasGroups then
         HandleGroupBands;
       // This must be done after the groups were handled.
-      Report.ProcessAggregates(aPageIdx,aPageData);
+      Report.ProcessAggregates(lPage,aPageData);
       HandleDataBands;
       aPageData.Next;
       end;
-    Report.ProcessAggregates(aPageIdx,aPageData);
+    Report.ProcessAggregates(lPage,aPageData);
     PrepareRecord;
     end;
   CheckNewOrOverFlow(True);
+  if FHasGroupFooter then
+    HandleLastGroupFooters;
   // only print if we actually had data
   if assigned(aPageData) and (aPageData.RecNo > 1) then
     begin
-    for I := 0 to Report.FBands.Count-1 do
+    for I := 0 to FBands.Count-1 do
       begin
-      lBand := TFPReportCustomBand(Report.FBands[I]);
+      lBand := TFPReportCustomBand(FBands[I]);
       if lBand is TFPReportCustomDataBand then
         if TFPReportCustomDataBand(lBand).FooterBand <> nil then
           ShowBandWithChilds(TFPReportCustomDataBand(lBand).FooterBand);
       end;
     end;
-  if FHasGroupFooter then
-    HandleLastGroupFooters;
   if Assigned(aPageData) and (not TwoPass or not IsFirstPass) then
     aPageData.Close;
 end;
@@ -11176,9 +11287,9 @@ Var
   lBand : TFPReportCustomBand;
 
 begin
-  for I:=0 to Report.FBands.Count-1 do
+  for I:=0 to FBands.Count-1 do
   begin
-    lBand := TFPReportCustomBand(Report.FBands[I]);
+    lBand := TFPReportCustomBand(FBands[I]);
     if lBand is TFPReportCustomSummaryBand then
     begin
       { We are allowed to use design Layout.Height instead of RTLayout.Height
@@ -11440,6 +11551,18 @@ begin
   // It is pointless to do so if we're doing 2 passes anyway
   if Report.UsePageCountMarker then
     Report.DoProcessTwoPass;
+end;
+
+constructor TFPReportLayouter.Create(AOwner : TComponent);
+begin
+  Inherited Create(AOwner);
+  FBands:=TBandList.Create;
+end;
+
+destructor TFPReportLayouter.Destroy;
+begin
+  FreeAndNil(Fbands);
+  inherited Destroy;
 end;
 
 procedure TFPReportLayouter.Execute(aReport: TFPCustomReport);

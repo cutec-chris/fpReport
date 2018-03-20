@@ -83,7 +83,7 @@ Type
 
   EExprScanner = Class(Exception);
 
-  TResultType = (rtBoolean,rtInteger,rtFloat,rtDateTime,rtString);
+  TResultType = (rtBoolean,rtInteger,rtFloat,rtDateTime,rtString,rtCurrency);
   TResultTypes = set of TResultType;
 
   TFPExpressionResult = record
@@ -3964,3 +3964,4 @@ initialization
 finalization
   FreeBuiltins;
 end.
+

@@ -9,7 +9,7 @@
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
     </CompilerOptions>
-    <Files Count="32">
+    <Files Count="30">
       <Item1>
         <Filename Value="fpreportdesignreportdata.pp"/>
         <UnitName Value="fpreportdesignreportdata"/>
@@ -51,93 +51,85 @@
         <UnitName Value="frmconfigreportdata"/>
       </Item10>
       <Item11>
-        <Filename Value="frmfpreportdataconnectioneditor.pp"/>
-        <UnitName Value="frmfpreportdataconnectioneditor"/>
-      </Item11>
-      <Item12>
         <Filename Value="frmfpreportdesignermain.pp"/>
         <UnitName Value="frmfpreportdesignermain"/>
-      </Item12>
-      <Item13>
+      </Item11>
+      <Item12>
         <Filename Value="frmfpreportimageedit.pp"/>
         <UnitName Value="frmfpreportimageedit"/>
-      </Item13>
-      <Item14>
+      </Item12>
+      <Item13>
         <Filename Value="frmfpreportmemoedit.pp"/>
         <UnitName Value="frmfpreportmemoedit"/>
-      </Item14>
-      <Item15>
+      </Item13>
+      <Item14>
         <Filename Value="frmfpreportpreviewdata.pp"/>
         <UnitName Value="frmfpreportpreviewdata"/>
-      </Item15>
-      <Item16>
+      </Item14>
+      <Item15>
         <Filename Value="frmfpreportproperties.pp"/>
         <UnitName Value="frmfpreportproperties"/>
-      </Item16>
-      <Item17>
+      </Item15>
+      <Item16>
         <Filename Value="frmfpreportshapeedit.pp"/>
         <UnitName Value="frmfpreportshapeedit"/>
-      </Item17>
-      <Item18>
+      </Item16>
+      <Item17>
         <Filename Value="frmfpreportvariables.pp"/>
         <UnitName Value="frmfpreportvariables"/>
-      </Item18>
-      <Item19>
+      </Item17>
+      <Item18>
         <Filename Value="frmfprdresizeelements.pp"/>
         <UnitName Value="frmfprdresizeelements"/>
-      </Item19>
-      <Item20>
+      </Item18>
+      <Item19>
         <Filename Value="regfpdesigner.pp"/>
         <UnitName Value="regfpdesigner"/>
-      </Item20>
-      <Item21>
+      </Item19>
+      <Item20>
         <Filename Value="fpreportdesigner.pp"/>
         <UnitName Value="FPReportDesigner"/>
+      </Item20>
+      <Item21>
+        <Filename Value="frmfprdresizeelements.lfm"/>
+        <Type Value="LFM"/>
       </Item21>
       <Item22>
-        <Filename Value="frmfprdresizeelements.lfm"/>
+        <Filename Value="frafpreportdata.lfm"/>
         <Type Value="LFM"/>
       </Item22>
       <Item23>
-        <Filename Value="frafpreportdata.lfm"/>
+        <Filename Value="frmfpreportalignelements.lfm"/>
         <Type Value="LFM"/>
       </Item23>
       <Item24>
-        <Filename Value="frmfpreportalignelements.lfm"/>
+        <Filename Value="frmfpreportdesignermain.lfm"/>
         <Type Value="LFM"/>
       </Item24>
       <Item25>
-        <Filename Value="frmfpreportdataconnectioneditor.lfm"/>
+        <Filename Value="frmfpreportimageedit.lfm"/>
         <Type Value="LFM"/>
       </Item25>
       <Item26>
-        <Filename Value="frmfpreportdesignermain.lfm"/>
+        <Filename Value="frmfpreportmemoedit.lfm"/>
         <Type Value="LFM"/>
       </Item26>
       <Item27>
-        <Filename Value="frmfpreportimageedit.lfm"/>
+        <Filename Value="frmfpreportpreviewdata.lfm"/>
         <Type Value="LFM"/>
       </Item27>
       <Item28>
-        <Filename Value="frmfpreportmemoedit.lfm"/>
+        <Filename Value="frmfpreportproperties.lfm"/>
         <Type Value="LFM"/>
       </Item28>
       <Item29>
-        <Filename Value="frmfpreportpreviewdata.lfm"/>
+        <Filename Value="frmfpreportshapeedit.lfm"/>
         <Type Value="LFM"/>
       </Item29>
       <Item30>
-        <Filename Value="frmfpreportproperties.lfm"/>
-        <Type Value="LFM"/>
-      </Item30>
-      <Item31>
-        <Filename Value="frmfpreportshapeedit.lfm"/>
-        <Type Value="LFM"/>
-      </Item31>
-      <Item32>
         <Filename Value="frmfpreportvariables.lfm"/>
         <Type Value="LFM"/>
-      </Item32>
+      </Item30>
     </Files>
     <RequiredPkgs Count="5">
       <Item1>

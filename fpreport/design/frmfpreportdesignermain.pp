@@ -19,7 +19,7 @@ unit frmfpreportdesignermain;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls, fpreportdata,
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls, fprepdata,
   Menus, ActnList, ComCtrls, ExtCtrls, IniPropStorage, fpreport, fpreportdesignctrl,
   fraReportObjectInspector, fpreportdesignreportdata, frafpreportdata, mrumanager;
 
@@ -468,11 +468,13 @@ begin
     IniFileName := ChangeFileExt(ParamStr(0), '.ini');
     MenuItem := MIRecent;
     PopupMenu := PMRecent;
+    {$if FPC_FULLVERSION>30400}
     MaxItemLength := 80;
     MenuCaptionMask := '(%d) %s';
     OnRecentFile := @MRUMenuManager1RecentFile;
     LoadRecentFilesFromIni;
     maxRecent := 15;
+    {$endif}
     end;
 end;
 
@@ -1511,7 +1513,9 @@ begin
     FFilename:=AFileName;
     if Assigned(errs) and (Errs.Count>0) then
       MessageDlg(SErrAccessingData,Format(SErrAccessingDataDetails,[Errs.Text]),mtWarning,[mbOK],'');
+    {$if FPC_FULLVERSION>30400}
     FLoadModified:=rs.IsModified;
+    {$endif}
   finally
     FreeAndNil(rs);
     FreeAndNil(Errs);

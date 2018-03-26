@@ -9,8 +9,7 @@ interface
 uses
   fpreportdesignreportdata, fpreportdrawruler, fpreportdesignctrl, 
   fpreportdesignobjectlist, frafpreportdata, fraReportObjectInspector, 
-  frmfpreportalignelements, frmconfigreportdata, 
-  frmfpreportdataconnectioneditor, frmfpreportdesignermain, 
+  frmfpreportalignelements, frmconfigreportdata, frmfpreportdesignermain, 
   frmfpreportimageedit, frmfpreportmemoedit, frmfpreportpreviewdata, 
   frmfpreportproperties, frmfpreportshapeedit, frmfpreportvariables, 
   frmfprdresizeelements, regfpdesigner, FPReportDesigner, LazarusPackageIntf;

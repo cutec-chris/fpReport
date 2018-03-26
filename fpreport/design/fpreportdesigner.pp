@@ -21,6 +21,19 @@ interface
 uses
   Classes, SysUtils, forms, fpreport, frmfpreportdesignermain;
 
+Const
+  // Aliases for convenience
+  AllReportDesignOptions = frmfpreportdesignermain.AllReportDesignOptions;
+  rdoManageData      = frmfpreportdesignermain.rdoManageData;      // Allow user to manage report data
+  rdoManageVariables = frmfpreportdesignermain.rdoManageVariables; // Allow user to manage report variables
+  rdoAllowLoad       = frmfpreportdesignermain.rdoAllowLoad;       // Allow user to load new reports (open)
+  rdoAllowSave       = frmfpreportdesignermain.rdoAllowSave;       // Allow user to save reports (open)
+  rdoAllowProperties = frmfpreportdesignermain.rdoAllowProperties; // Allow user to save
+  rdoAllowPageAdd    = frmfpreportdesignermain.rdoAllowPageAdd;    // Allow user to add pages
+  rdoAllowNew        = frmfpreportdesignermain.rdoAllowNew;        // Allow user to start new report
+  rdoAllowPreview    = frmfpreportdesignermain.rdoAllowPreview;    // Allow user to ask report preview
+  rdoAllowBands      = frmfpreportdesignermain.rdoAllowBands;      // Allow user to add/remove bands
+
 type
   TFPReportDesignOption = frmfpreportdesignermain.TFPReportDesignOption;
   TFPReportDesignOptions = frmfpreportdesignermain.TFPReportDesignOptions;
@@ -62,7 +75,8 @@ type
 
 implementation
 
-uses fpjsonreport;
+uses
+  fpjsonreport;
 
 Resourcestring
   SErrNoReport = 'No report assigned.';
@@ -89,6 +103,7 @@ begin
   J:=report as TFPJSONReport;
   J.DesignTimeJSON.Clear;
   J.SavetoJSON(J.DesignTimeJSON);
+  (Sender as TFPReportDesignerForm).ResetModified;
 end;
 
 procedure TFPReportDesigner.ConfigDesigner(F : TFPReportDesignerForm);

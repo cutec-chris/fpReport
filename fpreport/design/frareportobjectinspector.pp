@@ -49,11 +49,13 @@ type
     procedure SetNodeProps(N: TTreeNode; E: TComponent);
     procedure SetReport(AValue: TFPReport);
     procedure SetSRT(AValue: Boolean);
+    procedure UpdateReportTree;
   Protected
     Property IgnoreSelectionChange : Boolean Read FISC Write FISC;
   public
     Procedure UpdateSelection;
     procedure RefreshReportTree;
+    Procedure RefreshOI;
     Procedure SelectControls(AList : TReportObjectList);
     Property Objectlist : TReportObjectList Read FList;
     Property ShowReportTree : Boolean Read GetSRT Write SetSRT;
@@ -156,8 +158,26 @@ begin
     OnSelectElement(Self,C);
 end;
 
+procedure TObjectInspectorFrame.UpdateReportTree;
+
+Var
+  I: Integer;
+  E : TFPReportElement;
+  N : TTreeNode;
+
+begin
+  For I:=0 to ObjectList.Count-1 do
+    begin
+    E:=ObjectList[i].Element;
+    N:=TVReport.Items.FindNodeWithData(E);
+    if Assigned(N) then
+      N.Text:=GetNodeNameForElement(E);
+    end;
+end;
+
 procedure TObjectInspectorFrame.PGReportModified(Sender: TObject);
 begin
+  UpdateReportTree;
   If Assigned(FOnModified) then
     FOnModified(Self);
 end;
@@ -186,25 +206,29 @@ begin
       IgnoreSelectionChange:=True;
       BeginUpdate;
       Clear;
-      if Assigned(FReport) then
+      if Not Assigned(FReport) then
+        exit;
+      PN:=AddChild(Nil,'Report');
+      SetNodeProps(PN,FReport);
+      For I:=0 to FReport.PageCount-1 do
         begin
-        PN:=AddChild(Nil,'Report');
-        SetNodeProps(PN,FReport);
-        For I:=0 to FReport.PageCount-1 do
-          begin
-          S:=Format(SPage,[I+1]);
-          if (FReport.Pages[i].Name<>'') then
-            S:=S+': '+FReport.Pages[i].Name;
-          N:=AddChild(PN,S);
-          SetNodeProps(N,FReport.Pages[i]);
-          AddElementChildren(N,FReport.Pages[i]);
-          end;
-        PN.Expand(True);
+        S:=Format(SPage,[I+1]);
+        if (FReport.Pages[i].Name<>'') then
+          S:=S+': '+FReport.Pages[i].Name;
+        N:=AddChild(PN,S);
+        SetNodeProps(N,FReport.Pages[i]);
+        AddElementChildren(N,FReport.Pages[i]);
         end;
+      PN.Expand(True);
     finally
       EndUpdate;
       IgnoreSelectionChange:=False;
     end;
+end;
+
+procedure TObjectInspectorFrame.RefreshOI;
+begin
+  PGReport.RefreshPropertyValues;
 end;
 
 procedure TObjectInspectorFrame.SetReport(AValue: TFPReport);

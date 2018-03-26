@@ -15,8 +15,6 @@
 unit fpreportdesignctrl;
 
 {$mode objfpc}{$H+}
-{$modeswitch advancedrecords}
-
 { $DEFINE DEBUGRD}
 
 interface
@@ -29,18 +27,6 @@ Const
   clGrid  = TColor($E0E0E0);      // Default color for guide grid
   clSelectRect = clNavy;          // Pen color to draw selection rectangle
   psSelectRect = psDashDot;       // Pen style to draw selection rectangle with
-
-type
-  TRectHelper = record helper for TRect
-  private
-    function GetWidth: Integer;
-    procedure SetWidth(const Value: Integer);
-    function GetHeight: Integer;
-    procedure SetHeight(const Value: Integer);
-  public
-    property Width: Integer read GetWidth write SetWidth;
-    property Height: Integer read GetHeight write SetHeight;
-  end;
 
 Type
   TSelectResult = (srNone,srSelected,srDeselected);
@@ -66,6 +52,7 @@ Type
     FMinControlWidth: Integer;
     FObjects: TReportObjectList;
     FOnElementCreated: TOnElementCreatedEvent;
+    FOnReportChanged: TNotifyEvent;
     FOnSelectionChanged: TNotifyEvent;
     FOnStateChange: TNotifyEvent;
     FPage: TFPReportCustomPage;
@@ -94,6 +81,7 @@ Type
     procedure DoneMoveSelection;
     procedure DoneResizeSelection;
     procedure DoneSelectRectangle(Extend: Boolean);
+    procedure DoPagesizeChange(Sender: TObject);
     procedure DoReportChanged(Sender: TObject);
     procedure ExtendAddRectangle;
     procedure ExtendSelectRectangle;
@@ -152,6 +140,7 @@ Type
     procedure UpdatePageParams; virtual;
     procedure Reset;
     procedure CancelOperation;
+    function ShowEditorForElement(aElement: TFPReportElement): Boolean;
     Function AddBand(ABandClass : TFPReportBandClass) : TFPReportCustomBand;
     Procedure AddElement(AElementClass : TFPReportElementClass; Multi : Boolean = False);
     Function SelectObjectsInRectangle(ARect : TRect; ExtendSelection : Boolean) : TSelectResult;
@@ -173,6 +162,7 @@ Type
     Property Zoom : Single Read FZoom Write SetZoom;
     Property OnElementCreated : TOnElementCreatedEvent Read FOnElementCreated Write FOnElementCreated;
     Property OnSelectionChanged : TNotifyEvent Read FOnSelectionChanged Write FOnSelectionChanged;
+    Property OnReportChanged : TNotifyEvent Read FOnReportChanged Write FOnReportChanged;
     Property OnStateChange : TNotifyEvent Read FOnStateChange Write FOnStateChange;
   end;
 
@@ -189,26 +179,6 @@ const
   cMoveStepSmall = 1;
   cMoveStepLarge = 8;
 
-  function TRectHelper.GetHeight: Integer;
-  begin
-    Result := Bottom - Top;
-  end;
-
-  procedure TRectHelper.SetHeight(const Value: Integer);
-  begin
-    Bottom := Top + Value;
-  end;
-
-  function TRectHelper.GetWidth: Integer;
-  begin
-    Result := Right - Left;
-  end;
-
-  procedure TRectHelper.SetWidth(const Value: Integer);
-  begin
-    Right := Left + Value;
-  end;
-
 { ---------------------------------------------------------------------
   TFPReportDesignerControl
   ---------------------------------------------------------------------}
@@ -224,6 +194,8 @@ begin
   Parent:= AOwner as TWinControl;
   Color:=clWhite;
   FSnapResolution := 8;
+  FMinControlHeight:=FSnapResolution*2;
+  FMinControlWidth:=FSnapResolution*2;
   FCanvasExport:=CreateExportCanvas;
   FCanvasExport.Canvas:=Self.Canvas;
   FCanvasExport.HDPI:=CurrentDPI;
@@ -272,7 +244,7 @@ Var
   I : Integer;
   O : TReportObject;
   R : TRect;
-
+  
 begin
   Result:=srNone;
   R:=NormalizeRect(ARect);
@@ -351,6 +323,7 @@ procedure TFPReportDesignerControl.SetPage(AValue: TFPReportCustomPage);
 begin
   If AValue=FPage then exit;
   FPage:=AValue;
+  FPage.OnPageSizeChange:=@DoPagesizeChange;
   UpdatePageParams;
   FObjects.LoadFromPage(AValue);
   FObjects.OrderBands(Canvas,CurrentDPI);
@@ -399,8 +372,10 @@ Var
   C : String;
   R : TRect;
   S : TSize;
+  Opts : TMemoDragDropOptions;
 
 begin
+  Opts:=[];
   O:=FObjects.GetBandObjectAt(Point(X,Y),[goBandHandle]);
   if O=Nil then
     exit;
@@ -409,21 +384,20 @@ begin
     exit;
   if Source is TMemoDragDrop then
     begin
-    E:=TFPReportMemo.Create(ABand);
+    E:=TFPReportMemo.Create(ABand.Report);
     C:=(Source as TMemoDragDrop).Content;
     TFPReportMemo(E).Text:=C;
-    {$if FPC_FULLVERSION>30000}
     R:=Default(TRect);
-    {$else}
-    R:=Rect(0,0,0,0);
-    {$endif}
     OffSetRect(R,X,Y);
     S:=Canvas.TextExtent(C);
-    R.Width:=Round(S.cx*1.2);
-    R.Height:=Round(S.cy*1.2);
+    R.Width:=Round(S.Width*1.2);
+    R.Height:=Round(S.Height*1.2);
+    Opts:=TMemoDragDrop(Source).Options;
     end;
   DoAddControl(ABand,E,R,False);
   FObjects.SelectElement(E);
+  if mddShowEditor in Opts then
+    ShowEditorForElement(E)
 end;
 
 procedure TFPReportDesignerControl.DDDragOver(Sender, Source: TObject; X,
@@ -617,9 +591,17 @@ end;
 
 function TFPReportDesignerControl.DoAddControl(ABand: TFPReportCustomBand; AElement : TFPReportElement;  ARect: TRect; IsMulti: Boolean) : TReportObject;
 
+  Function MinSize (aSize : Integer) : Integer;
+
+  begin
+    Result:=ASize; // Should be handled in calling routine, actually
+  end;
+
+
 Var
   ERect,BRect : TRect;
   RRect : TFPReportRect;
+  W,H : Integer;
 
 begin
   AElement.Parent:=ABand;
@@ -628,10 +610,12 @@ begin
   ERect.Top:=ARect.Top-BRect.Top;
   ERect.Right:=ARect.Right-BRect.Left;
   ERect.Bottom:=ARect.Bottom-BRect.Top;
+  W:=MinSize(ERect.Right-ERect.Left);
+  H:=MinSize(ERect.Bottom-ERect.Top);
   RRect.SetRect(PixelsToMM(ERect.Left,CurrentDPI),
                 PixelsToMM(ERect.Top,CurrentDPI),
-                PixelsToMM(ERect.Right-ERect.Left,CurrentDPI),
-                PixelsToMM(ERect.Bottom-ERect.Top,CurrentDPI));
+                PixelsToMM(W,CurrentDPI),
+                PixelsToMM(H,CurrentDPI));
 {$IFDEF DEBUGRD}  Writeln('Adding,',AElement.ClassName,' at absolute rect:',RectToStr(ARect),', band rect: ',RectToStr(BRect),' -> Relative rect ',RectToStr(ERect),' natural units: ',RRect.AsString);{$ENDIF}
   AElement.Layout.SetPosition(RRect);
   Result:=FObjects.AddElement(AElement);
@@ -645,7 +629,8 @@ function TFPReportDesignerControl.DoAddControl(ABand: TFPReportCustomBand;
   ARect: TRect; IsMulti: Boolean): TFPReportElement;
 
 begin
-  Result:=FAddClass.Create(ABand);
+  Result:=FAddClass.Create(Page.Report);
+  Result.Parent:=ABand;
   DoAddControl(ABand,Result,ARect,isMulti);
 end;
 
@@ -961,7 +946,6 @@ procedure TFPReportDesignerControl.DoneAddControl(IsMulti : Boolean);
 Var
   CR : TRect;
   O : TReportObject;
-  B : TFPReportCustomBand;
 
 begin
   {$IFDEF DEBUGRD}  Writeln('DoneAddControl: ',isMulti);{$ENDIF}
@@ -1045,9 +1029,17 @@ begin
   SetDesignerState(dsNeutral);
 end;
 
+procedure TFPReportDesignerControl.DoPagesizeChange(Sender: TObject);
+begin
+  UpdatePageParams;
+  Invalidate;
+end;
+
 procedure TFPReportDesignerControl.DoReportChanged(Sender: TObject);
 begin
   Invalidate;
+  If Assigned(OnReportChanged) then
+    OnReportChanged(Sender);
 end;
 
 procedure TFPReportDesignerControl.DrawCurrentFocusRect(IsClear : Boolean);
@@ -1177,30 +1169,41 @@ begin
   Screen.Cursor:=DefaultCursors[aHandlePos];
 end;
 
-procedure TFPReportDesignerControl.DClick(Sender: TObject);
+
+Function TFPReportDesignerControl.ShowEditorForElement(aElement : TFPReportElement) : Boolean;
 
 Var
-  O : TReportObject;
   C : TFPReportElementEditorClass;
   E : TFPReportElementEditor;
 
 begin
+  C:=gElementFactory.FindEditorClassForInstance(AElement);
+  if Assigned(C) then
+    begin
+    E:=C.Create(Self);
+    try
+      E.Element:=AElement;
+      Result:=E.Execute;
+      if Result then
+        begin
+        Objects.ReportChanged;
+        Invalidate;
+        end;
+    finally
+      E.Free;
+    end;
+    end;
+end;
+
+procedure TFPReportDesignerControl.DClick(Sender: TObject);
+
+Var
+  O : TReportObject;
+
+begin
   O:=GetObjectAt(FLastMouseDown,[]);
   if Assigned(O) and O.IsPlainElement then
-    begin
-    C:=gElementFactory.FindEditorClassForInstance(O.Element);
-    if Assigned(C) then
-      begin
-      E:=C.Create(Self);
-      try
-        E.Element:=O.Element;
-        if E.Execute then
-          Invalidate;
-      finally
-        E.Free;
-      end;
-      end;
-    end;
+    ShowEditorForElement(O.Element);
 end;
 
 procedure TFPReportDesignerControl.CancelOperation;
@@ -1232,11 +1235,19 @@ end;
 
 function TFPReportDesignerControl.AddBand(ABandClass: TFPReportBandClass
   ): TFPReportCustomBand;
+
+Var
+  O : TReportObject;
+
 begin
   Result:=ABandClass.Create(Page);
-  Result.Layout.Height:=2;
-  FObjects.AddBand(Result);
-
+  Result.Layout.Height:=PixelsToMM(FMinControlHeight,CurrentDPI);
+  Result.Parent:=Page;
+  O:=FObjects.AddBand(Result);
+  FObjects.OrderBands(Canvas,CurrentDPI);
+  If  Assigned(FOnElementCreated) then
+    FOnElementCreated(Self,Result);
+  FObjects.SelectElement(O.AsBand);
 end;
 
 procedure TFPReportDesignerControl.AddElement(
@@ -1258,5 +1269,4 @@ begin
 end;
 
 end.
-
 

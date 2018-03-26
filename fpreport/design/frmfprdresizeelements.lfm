@@ -1,17 +1,17 @@
 object ResizeElementsForm: TResizeElementsForm
   Left = 728
-  Height = 280
+  Height = 328
   Top = 319
   Width = 455
   Caption = 'Resize selected elements'
-  ClientHeight = 280
+  ClientHeight = 328
   ClientWidth = 455
   Position = poOwnerFormCenter
   LCLVersion = '1.9.0.0'
   object BPResize: TButtonPanel
     Left = 6
     Height = 42
-    Top = 232
+    Top = 280
     Width = 443
     OKButton.Name = 'OKButton'
     OKButton.DefaultCaption = True
@@ -26,11 +26,11 @@ object ResizeElementsForm: TResizeElementsForm
   end
   object GBHorizontal: TGroupBox
     Left = 8
-    Height = 219
+    Height = 256
     Top = 8
     Width = 184
     Caption = 'Horizontal'
-    ClientHeight = 201
+    ClientHeight = 238
     ClientWidth = 182
     TabOrder = 1
     object RBHNone: TRadioButton
@@ -69,7 +69,7 @@ object ResizeElementsForm: TResizeElementsForm
       Width = 78
       Caption = 'Fixed size'
       OnClick = RBHFixedClick
-      TabOrder = 3
+      TabOrder = 4
     end
     object FSEHorizontal: TFloatSpinEdit
       Left = 48
@@ -79,17 +79,26 @@ object ResizeElementsForm: TResizeElementsForm
       Increment = 1
       MaxValue = 100
       MinValue = 0
-      TabOrder = 4
+      TabOrder = 5
       Value = 1
+    end
+    object RBHParentSize: TRadioButton
+      Left = 18
+      Height = 22
+      Top = 208
+      Width = 86
+      Caption = 'Parent size'
+      OnClick = RBHFixedClick
+      TabOrder = 3
     end
   end
   object GBVertical: TGroupBox
     Left = 208
-    Height = 219
+    Height = 248
     Top = 8
     Width = 176
     Caption = 'Vertical'
-    ClientHeight = 201
+    ClientHeight = 230
     ClientWidth = 174
     TabOrder = 2
     object RBVNone: TRadioButton
@@ -140,6 +149,15 @@ object ResizeElementsForm: TResizeElementsForm
       MinValue = 0
       TabOrder = 4
       Value = 1
+    end
+    object RBVParentSize: TRadioButton
+      Left = 18
+      Height = 22
+      Top = 208
+      Width = 86
+      Caption = 'Parent size'
+      OnClick = RBHFixedClick
+      TabOrder = 5
     end
   end
 end

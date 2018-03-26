@@ -61,12 +61,14 @@ var
   ReportConnectionEditorForm: TReportConnectionEditorForm;
 
 Resourcestring
-  SConnectionSuccesful = 'Connection was succesfully made';
+  SConnectionSuccesful = 'Connection to the database was succesfully made.';
   SErrConnectionNotOK = 'Error connecting to the database';
+  SSuccess = 'Succesfully connected.';
+
 
 implementation
 
-uses strutils, reportdesigndatasql;
+uses strutils, fpreportdatasqldb;
 
 
 {$R *.lfm}
@@ -90,7 +92,8 @@ begin
     FormToParams;
     S:=TFPReportConnector.TestConnection(FParams);
     if (S<>'') then
-      MessageDlg(SErrConnectionNotOK,S,mtError,[mbOK],0);
+      if MessageDlg(SErrConnectionNotOK,S,mtError,[mbIgnore,mbCancel],0)=mrIgnore then
+        S:='';
     end;
   CanClose:=(S='');
 end;
@@ -103,15 +106,15 @@ end;
 procedure TReportConnectionEditorForm.SBTestClick(Sender: TObject);
 
 Var
-  C : TFPReportConnector;
   S : String;
 
 begin
   FormToParams;
   S:=TFPReportConnector.TestConnection(FParams);
   if (S<>'') then
-    MessageDlg(SErrConnectionNotOK,S,mtError,[mbOK],0);
-
+    MessageDlg(SErrConnectionNotOK,S,mtError,[mbOK],0)
+  else
+    MessageDlg(SSuccess,SConnectionSuccesful,mtInformation,[mbOK],0);
 end;
 
 procedure TReportConnectionEditorForm.Setparams(AValue: TJSONObject);

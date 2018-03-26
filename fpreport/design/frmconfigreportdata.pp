@@ -19,8 +19,9 @@ unit frmconfigreportdata;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls, Buttons, ButtonPanel, ActnList, ComCtrls, ExtCtrls,
-  EditBtn, fpreportdesignreportdata, fpjson, db, reportdesignbaseforms;
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls, Buttons,
+  ButtonPanel, ActnList, ComCtrls, ExtCtrls, EditBtn,
+  fpreportdata, fpreportdesignreportdata, fpjson, reportdesignbaseforms;
 
 type
   TForm = TBaseReportDataForm;
@@ -34,8 +35,10 @@ type
     ALReportData: TActionList;
     BPVariables: TButtonPanel;
     CBType: TComboBox;
+    CBMaster: TComboBox;
     EName: TEdit;
     ILReportdata: TImageList;
+    Label4: TLabel;
     LBReportData: TListBox;
     LENAme: TLabel;
     Label3: TLabel;
@@ -54,19 +57,20 @@ type
     procedure ADuplicateUpdate(Sender: TObject);
     procedure APreviewExecute(Sender: TObject);
     procedure APreviewUpdate(Sender: TObject);
+    procedure CBMasterChange(Sender: TObject);
     procedure CBTypeChange(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure LBReportDataSelectionChange(Sender: TObject; User: boolean);
   private
-    FCurrentHandler : TDesignReportDataHandler;
-    FCurrentData : TDesignReportData;
+    FCurrentHandler : TFPReportDataHandler;
+    FCurrentData :  TFPReportDataDefinitionItem;
     FCurrentFrame : TReportDataConfigFrame;
   Protected
-    procedure NewItem(CloneFrom: TDesignReportData); virtual;
+    procedure NewItem(CloneFrom: TFPReportDataDefinitionItem); virtual;
     function SaveCurrentItem: Boolean; virtual;
-    procedure SetData(AValue: TDesignReportDataCollection); override;
+    procedure SetData(AValue: TFPReportDataDefinitions); override;
     procedure ShowData; virtual;
     procedure ShowDataFrame; virtual;
     procedure ShowSelectedItem;virtual;
@@ -84,33 +88,46 @@ Resourcestring
   SAllowedChars2   = 'The first character must be a letter or underscore';
   SErrIllegalDataName = 'The data source name %s is not a legal data source name.';
   SWarnDuplicateDataName = 'The data set name %s already exists.';
+  SNone = '(none)';
 
 { TReportDataConfigForm }
 
 procedure TReportDataConfigForm.FormCreate(Sender: TObject);
 begin
-  TDesignReportDataHandler.GetRegisteredTypes(CBType.Items);
+  TDesignReportDataManager.GetRegisteredTypes(CBType.Items);
   ShowSelectedItem;
 end;
 
 procedure TReportDataConfigForm.CBTypeChange(Sender: TObject);
 begin
+
   ShowDataFrame;
 end;
 
 procedure TReportDataConfigForm.ShowDataFrame;
+
+Var
+  M : String;
 
 begin
   FreeAndNil(FCurrentHandler);
   FreeAndNil(FCurrentFrame);
   if CBType.ItemIndex=-1 then
     exit;
-  FCurrentHandler:=TDesignReportDataHandler.GetTypeHandler(CBType.Text);
-  FCurrentFrame:=FCurrentHandler.CreateConfigFrame(Self);
+  FCurrentHandler:=TDesignReportDataManager.GetTypeHandler(CBType.Text);
+  FCurrentFrame:=TDesignReportDataManager.CreateConfigFrame(FCurrentHandler.DataType,Self);
   FCurrentFrame.Parent:=PData;
   FCurrentFrame.Align:=alClient;
   if Assigned(FCurrentData) then
     FCurrentFrame.SetConfig(FCurrentData.Config);
+  CBMaster.Enabled:=FCurrentHandler.AllowMasterDetail;
+  M:=FCurrentData.Master;
+  if (M<>'') and CBMaster.Enabled then
+    begin
+    CBMaster.ItemIndex:=CBMaster.Items.IndexOf(M);
+    end
+  else
+    CBMaster.ItemIndex:=0;
 end;
 
 procedure TReportDataConfigForm.FormCloseQuery(Sender: TObject; var CanClose: boolean);
@@ -152,12 +169,12 @@ begin
   NewItem(Nil);
 end;
 
-procedure TReportDataConfigForm.NewItem(CloneFrom : TDesignReportData);
+procedure TReportDataConfigForm.NewItem(CloneFrom : TFPReportDataDefinitionItem);
 
 Var
   DOK,VOK : Boolean;
   N : String;
-  D : TDesignReportData;
+  D : TFPReportDataDefinitionItem;
   I : Integer;
 
 begin
@@ -241,12 +258,10 @@ procedure TReportDataConfigForm.APreviewExecute(Sender: TObject);
 
 Var
   C : TJSONObject;
-  DS : TDataset;
   S : String;
   F : TBaseReportDataPreviewForm;
 
 begin
-  DS:=Nil;
   S:=FCurrentFrame.SaveNotOKMessage;
   if (S<>'') then
     begin
@@ -276,6 +291,19 @@ begin
   (Sender as TAction).Enabled:=Assigned(ReportDataPreviewClass) and (FCurrentData<>Nil) and (FCurrentFrame<>Nil) and (FCurrentHandler<>Nil);
 end;
 
+procedure TReportDataConfigForm.CBMasterChange(Sender: TObject);
+
+Var
+  D : String;
+
+begin
+  if CBMaster.ItemIndex<0 then
+    exit;
+  D:=CBMaster.Text;
+  if (D<>'') and (D<>SNone) then
+    Data.CheckCircularReference(D,FCurrentData);
+end;
+
 procedure TReportDataConfigForm.FormDestroy(Sender: TObject);
 begin
   FreeAndNil(FCurrentHandler);
@@ -285,14 +313,14 @@ end;
 procedure TReportDataConfigForm.LBReportDataSelectionChange(Sender: TObject; User: boolean);
 
 Var
-  D : TDesignReportData;
+  D : TFPReportDataDefinitionItem;
 
 begin
   SaveCurrentItem;
   if LBReportData.ItemIndex=-1 then
     D:=Nil
   else
-    D:=(LBReportData.Items.Objects[LBReportData.ItemIndex] as TDesignReportData);
+    D:=(LBReportData.Items.Objects[LBReportData.ItemIndex] as TFPReportDataDefinitionItem);
   if D<>FCurrentData then
     begin
     FCurrentData:=D;
@@ -300,7 +328,7 @@ begin
     end;
 end;
 
-procedure TReportDataConfigForm.SetData(AValue: TDesignReportDataCollection);
+procedure TReportDataConfigForm.SetData(AValue: TFPReportDataDefinitions);
 begin
   if Data=AValue then Exit;
   Inherited;
@@ -341,8 +369,16 @@ begin
     begin
     if not Assigned(FCurrentFrame) then
       Raise Exception.Create('Internal error : No config frame');
+    FCurrentData.Config.Clear;
     FCurrentFrame.GetConfig(FCurrentData.Config);
     end;
+  S:='';
+  if CBMaster.Enabled then
+    S:=CBMaster.Text;
+  if (S='') or (S=SNone) then
+    FCurrentData.Master:=''
+  else
+    FCurrentData.Master:=S;
 end;
 
 procedure TReportDataConfigForm.ShowSelectedItem;
@@ -372,16 +408,19 @@ procedure TReportDataConfigForm.ShowData;
 
 Var
   I : Integer;
-  S : TDesignReportData;
+  S : TFPReportDataDefinitionItem;
 
 begin
   LBReportData.Items.Clear;
+  CBMaster.Items.Clear;
+  CBMaster.Items.AddObject(SNone,nil);
   if Not Assigned(Data) then
     exit;
   For I:=0 to Data.Count-1 do
     begin
     S:=Data[i];
     LBReportData.Items.AddObject(S.Name,S);
+    CBMaster.Items.AddObject(S.Name,S);
     end;
   if Data.Count>0 then
     LBReportData.ItemIndex:=0

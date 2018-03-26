@@ -62,7 +62,6 @@
     <RequiredPkgs Count="4">
       <Item1>
         <PackageName Value="fpreport_fcl"/>
-        <DefaultFilename Value="../fpreport_fcl.lpk"/>
       </Item1>
       <Item2>
         <PackageName Value="Printer4Lazarus"/>

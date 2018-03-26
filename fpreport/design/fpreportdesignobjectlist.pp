@@ -21,7 +21,7 @@ unit fpreportdesignobjectlist;
 interface
 
 uses
-  Classes, SysUtils, graphics, lclintf, fpreportlclexport, fpreport, fgl, controls;
+  Classes, SysUtils, graphics, lclintf, fpreportlclexport, fpreport, controls;
 
 Const
   clResizeHandleSingle = clBlack;  // Pen color to draw selection resize handle
@@ -29,9 +29,9 @@ Const
 
 Type
   TSelectionSort = (ssNone,ssHorz,ssvert);
-  THAlignAction  = (haNone,haLeft,haCenter,haRight,haSpace,haCentB);
-  TVAlignAction  = (vaNone,vaTop,vaCenter,vaBottom,vaSpace,vaCentB);
-  TSizeAdjust    = (saNone,saLargest,saSmallest,saValue);
+  THAlignAction  = (haNone,haLeft,haCenter,haRight,haSpace,haCentB,haLeftB,haRightB);
+  TVAlignAction  = (vaNone,vaTop,vaCenter,vaBottom,vaSpace,vaCentB,vaTopB,vaBottomB);
+  TSizeAdjust    = (saNone,saLargest,saSmallest,saValue,saParent);
   TFrameAction   = (faNone,faAll,faTop,faBottom,faLeft,faRight);
   TResizeHandlePosition = (rhNone,rhTopLeft,rhTop,rhTopRight,rhLeft,rhRight,rhBottomLeft, rhBottom,rhBottomRight);
   TResizeHandlePositions = set of TResizeHandlePosition;
@@ -81,6 +81,7 @@ Type
     FModified: Boolean;
     FOnReportChange: TNotifyEvent;
     FOnSelectionChange: TNotifyEvent;
+    FOnStructureChange: TNotifyEvent;
     FPage: TFPReportCustomPage;
     FPageOffSet: TPoint;
     FSelChangeCount : Integer;
@@ -92,15 +93,17 @@ Type
     function FindNextBand(ABand: TFPReportCustomBand): TFPReportCustomBand;
     function GetElement(AIndex : Integer): TFPReportElement;
     function GetObject(Aindex : Integer): TReportObject;
+    procedure SetModified(AValue: Boolean);
   protected
     procedure MoveResizeRect(Var R: TRect; AOffset: TPoint; ApplyToPos: TResizeHandlePosition);
     function  GetSelectionArray(SelSort: TSelectionSort): TReportObjectArray;
     procedure SelectRectInvalid;
     Procedure SelectionChanged; virtual;
-    Procedure ReportChanged; virtual;
   Public
     // Do things
     Procedure LoadFromPage(APage : TFPReportCustomPage); virtual;
+    Procedure ReportChanged; virtual;
+    Procedure StructureChanged; virtual;
     Procedure BeginSelectionUpdate;
     Procedure EndSelectionUpdate;
     Procedure ClearSelection;
@@ -116,8 +119,11 @@ Type
     procedure ResizeSelection(aHeight: TSizeAdjust; HSize: TFPReportUnits; aWidth: TSizeAdjust; WSize: TFPReportUnits);virtual;
     Procedure ResizeSelection(Delta : TPoint; ADPI : integer; ApplyToPos : TResizeHandlePosition);virtual;
     Procedure FrameSelection(aFrameAction : TFrameActions; doClearFirst : Boolean);
+    Procedure AdjustSelectedBandToContent(B : TFPReportCustomBand);
+    Procedure AdjustSelectedBandsToContent;
     Procedure ResetModified;
     Procedure SelectElement(E : TFPReportElement);
+    Function GetSelection : TReportObjectArray;
     // Will call selectionchanged, except when result=odrPage
     Function DeleteSelection : TObjectDeleteResult;
     // Various ways to get information
@@ -139,7 +145,8 @@ Type
     Property CanvasExport : TFPReportExportCanvas Read FCanvasExport Write FCanvasExport;
     Property OnSelectionChange : TNotifyEvent Read FOnSelectionChange Write FOnSelectionChange;
     Property OnReportChange : TNotifyEvent Read FOnReportChange Write FOnReportChange;
-    Property Modified : Boolean Read FModified Write FModified;
+    Property OnStructureChange : TNotifyEvent Read FOnStructureChange Write FOnStructureChange;
+    Property Modified : Boolean Read FModified;
     Property Objects[Aindex : Integer] : TReportObject Read GetObject; default;
     Property Elements[AIndex : Integer] : TFPReportElement Read GetElement;
     Property Page : TFPReportCustomPage Read FPage;
@@ -149,12 +156,17 @@ Type
   TReportDragDrop = Class(TDragObjectEx);
 
   { TMemoDragDrop }
+  TMemoDragDropOption = (mddShowEditor,mddShowFormatting);
+  TMemoDragDropOptions = Set of TMemoDragDropOption;
 
   TMemoDragDrop = Class(TReportDragDrop)
   private
     FContent: String;
+    FOptions: TMemoDragDropOptions;
   Public
+    Constructor Create(AControl : TControl; AContent : String; AOptions : TMemoDragDropOptions = []);
     Property Content : String Read FContent Write FContent;
+    Property Options : TMemoDragDropOptions Read FOptions Write FOptions;
   end;
 
 Function FindBandType(L :  TFPList; AClass : TClass; Var StartAt : Integer; ExtractResult : Boolean = False) : TFPReportCustomBand;
@@ -215,6 +227,15 @@ begin
     if ExtractResult then
       L.Delete(I);
     end;
+end;
+
+{ TMemoDragDrop }
+
+constructor TMemoDragDrop.Create(AControl: TControl; AContent: String; AOptions: TMemoDragDropOptions);
+begin
+  Inherited Create(AControl);
+  FContent:=AContent;
+  FOptions:=AOptions;
 end;
 
 { TReportObject }
@@ -288,6 +309,12 @@ begin
   Result:=Items[Aindex] as TReportObject;
 end;
 
+procedure TReportObjectList.SetModified(AValue: Boolean);
+begin
+  if FModified=AValue then Exit;
+  FModified:=AValue;
+end;
+
 procedure TReportObjectList.SelectionChanged;
 begin
   BeginSelectionUpdate;
@@ -296,10 +323,15 @@ end;
 
 procedure TReportObjectList.ReportChanged;
 begin
-  FModified:=True;
+  SetModified(True);
   if Assigned(OnReportChange) then
     OnReportChange(Self);
+end;
 
+procedure TReportObjectList.StructureChanged;
+begin
+  if Assigned(OnStructureChange) then
+    OnStructureChange(Self);
 end;
 
 procedure TReportObjectList.BeginSelectionUpdate;
@@ -310,10 +342,8 @@ end;
 procedure TReportObjectList.SelectRectInvalid;
 
 begin
-  {$if FPC_FULLVERSION>30000}
   FLastSelectionBounds:=Default(TRect);
   FLastSelectionRect:=Default(TFPReportRect);
-  {$endif}
 end;
 
 procedure TReportObjectList.EndSelectionUpdate;
@@ -424,8 +454,10 @@ Var
   APrevBand,ANextBand : TFPReportCustomBand;
   RO : TReportObject;
   P : TPoint;
+  lStructureChanged : Boolean;
 
 begin
+  lStructureChanged:=False;
   For I:=0 to Count-1 do
     begin
     IT:=GetObject(i);
@@ -449,6 +481,7 @@ begin
           // Correct Atop.
           ATop:=ATop-(ANextBand.Layout.Top-APrevBand.Layout.Top);
           IT.Element.Layout.Top:=ATop;
+          lStructureChanged:=True;
           end
         else
           IT.Element.Layout.Top:=ATop;
@@ -456,6 +489,8 @@ begin
      end;
   SelectRectInvalid;
   ReportChanged;
+  if lStructureChanged then
+    StructureChanged;
 end;
 
 procedure TReportObjectList.ResizeSelection(aHeight: TSizeAdjust;
@@ -497,6 +532,24 @@ begin
   For I:=0 to Length(Arr)-1 do
     With Arr[i].Element.Layout do
       begin
+      // For saParent, we determine the actual height/width here
+      // The parent can be different..
+      if AHeight=saParent then
+        begin
+        Top:=0.0;
+        if Assigned(Arr[i].Element.Parent) then
+          HSize:=Arr[i].Element.Parent.Layout.Height
+        else
+          HSize:=Arr[i].Element.Layout.Height
+        end;
+      if AWidth=saParent then
+        begin
+        Left:=0.0;
+        if Assigned(Arr[i].Element.Parent) then
+          WSize:=Arr[i].Element.Parent.Layout.Width
+        else
+          WSize:=Arr[i].Element.Layout.Width
+        end;
       If (aHeight<>saNone) then
         Height:=HSize;
       If aWidth<>saNone then
@@ -529,17 +582,17 @@ begin
         IT.Element.Layout.GetBoundsRect(RR);
         R.Left:=mmToPixels(RR.left,ADPI);
         R.Top:=mmToPixels(RR.Top,ADPI);
-        R.Right:=mmToPixels(RR.Width,ADPI)-R.Left;
-        R.Bottom:=mmToPixels(RR.Height,ADPI)-R.Top;
+        R.Width:=mmToPixels(RR.Width,ADPI);
+        R.Height:=mmToPixels(RR.Height,ADPI);
         MoveResizeRect(R,Delta,ApplytoPos);
-        if R.Right-R.Left<0 then
-          R.Right:=ReSizeHandleWidth-R.Left;
-        if R.Bottom-R.Top<0 then
-          R.Bottom:=ReSizeHandleWidth-R.top;
+        if R.Width<0 then
+          R.Width:=ReSizeHandleWidth;
+        if R.Height<0 then
+          R.Height:=ReSizeHandleWidth;
         RR.Left:=PixelsToMM(R.left,ADPI);
         RR.Top:=PixelsToMM(R.Top,ADPI);
-        RR.Width:=PixelsToMM(R.Right-R.Left,ADPI);
-        RR.Height:=PixelsToMM(R.Bottom-R.Top,ADPI);
+        RR.Width:=PixelsToMM(R.Width,ADPI);
+        RR.Height:=PixelsToMM(R.Height,ADPI);
         IT.Element.Layout.SetPosition(RR);
         end
       else if IT.isBand then
@@ -600,6 +653,38 @@ begin
   ReportChanged;
 end;
 
+procedure TReportObjectList.AdjustSelectedBandToContent(B: TFPReportCustomBand);
+
+Var
+  I : Integer;
+  H,P : TFPReportUnits;
+
+begin
+  if B.ChildCount=0 then
+    exit;
+  H:=B.Child[0].Layout.Height+B.Child[0].Layout.Top;
+  For I:=1 to B.ChildCount-1 do
+    begin
+    P:=B.Child[i].Layout.Height+B.Child[i].Layout.Top;
+    If P>H then
+      H:=P;
+    end;
+  B.Layout.Height:=H;
+  SelectRectInvalid;
+  ReportChanged;
+end;
+
+procedure TReportObjectList.AdjustSelectedBandsToContent;
+
+Var
+  I : integer;
+
+begin
+  For I:=0 to Count-1 do
+    If Objects[i].Selected and Objects[i].IsBand then
+      AdjustSelectedBandToContent(Objects[i].AsBand);
+end;
+
 procedure TReportObjectList.ResetModified;
 begin
   FModified:=False;
@@ -617,6 +702,11 @@ begin
     O:=Objects[i];
     O.Selected:=(O.Element=E);
     end;
+end;
+
+function TReportObjectList.GetSelection: TReportObjectArray;
+begin
+  Result:=GetSelectionArray(ssNone);
 end;
 
 function TReportObjectList.DeleteElement(O: TReportObject): TObjectDeleteResult;
@@ -686,6 +776,7 @@ begin
     if I>=Count then
       I:=Count-1;
     end;
+  ReportChanged;
   if (Result<>odrPage) then
     SelectionChanged;
 end;
@@ -721,10 +812,10 @@ function TReportObjectList.GetBandObjectAt(P: TPoint; AOptions : TGetObjectOptio
 Var
   I : Integer;
   R : TRect;
-  N : String;
+  {$IFDEF DEBUGROL}  N : String;{$ENDIF}
 
 begin
-  {$IFDEF DEBUGROL}Writeln('GetBandObjectAt(',P.X,',',P.Y,')');{$ENDIF}
+{$IFDEF DEBUGROL}Writeln('GetBandObjectAt(',P.X,',',P.Y,')');{$ENDIF}
   Result:=Nil;
   I:=0;
   While (Result=Nil) and (I<COunt) do
@@ -732,7 +823,7 @@ begin
     Result:=Objects[i];
     if Result.IsBand then
       begin
-      N:=Result.Element.ClassName;
+{$IFDEF DEBUGROL}        N:=Result.Element.ClassName;{$endif}
       R:=FCanvasExport.GetBandRect(Result.AsBand,goBandHandle in Aoptions);
       if Not PtInRect(R,P) then
         Result:=Nil;
@@ -811,6 +902,7 @@ Var
   O : TReportObject;
 
 begin
+  D:=Default(TRect);
   Result:=TFPList.Create;
   try
     For I:=0 to Count-1 do
@@ -840,6 +932,7 @@ Var
 
 begin
   BL:=Nil;
+  D:=Default(TRect);
   Result:=TFPList.Create;
   try
     try
@@ -928,18 +1021,20 @@ Var
   DY,Y : TFPReportUnits;
 
   // Position band and remove it from the list. Recurses to add child bands.
-  Function AddBandToList(ABand : TFPReportCustomBand) : Boolean;
+  Function AddBandToList(ABand : TFPReportCustomBand; Force : Boolean = False) : Boolean;
 
   begin
     Result:=Assigned(ABand);
     If not Result then
+      exit;
+    if (L.IndexOf(aBand)=-1) and not Force then
       exit;
 {$IFDEF DEBUGROL}Writeln('Placing band ',ABand.ClassName,'(',ABAnd.Name,') at ',Y);{$ENDIF}
     ABand.Layout.Top:=Y;
     Y:=Y+DY+ABand.Layout.Height;
     L.Remove(Aband);
     // Recurse
-    AddBandToList(TMyBand(Aband).ChildBand);
+    AddBandToList(TFPReportCustomBand(TMyBand(Aband).ChildBand));
   end;
 
   // Find a band of given type, if it exists add it (remove it from the list)
@@ -960,16 +1055,47 @@ Var
 
   var
     i : integer;
+    B : TFPReportCustomBandWithData;
+    P : TFPReportGroupHeaderBand;
+
   begin
     I:=0;
     While (I<L.Count) do
       begin
       if TObject(L[i]) is AClass then
-        if (TFPReportCustomDataBand(L[i]).Data=ADetail.Data) then
+        begin
+        B:=TFPReportCustomBandWithData(L[i]);
+        if (B.Data=ADetail.Data) then
           begin
-          AddBandToList(TFPReportCustomDataBand(L[i]));
+          // Recursively add parent groups
+          if B is TFPReportCustomGroupHeaderBand then
+            begin
+            P:=TFPReportGroupHeaderBand(B);
+            While P.ParentGroupHeader<>Nil do
+              begin
+              AddBandToList(P.ParentGroupHeader);
+              P:=TFPReportGroupHeaderBand(P.ParentGroupHeader);
+              end;
+            end;
+          // Recursively add child group footers...
+          if B is TFPReportCustomGroupFooterBand then
+            begin
+            P:=TFPReportGroupHeaderBand(TFPReportGroupFooterBand(B).GroupHeader);
+            if Assigned(P) then
+              begin
+              P:=TFPReportGroupHeaderBand(P.ChildGroupHeader);
+              While P<>Nil do
+                begin
+                if Assigned(P.GroupFooter) then
+                  AddBandToList(P.GroupFooter);
+                P:=TFPReportGroupHeaderBand(P.ChildGroupHeader);
+                end;
+              end;
+            end;
+          AddBandToList(B);
           I:=-1;
           end;
+        end;
       Inc(I);
       end;
   end;
@@ -986,7 +1112,7 @@ Var
      if not Result then
        exit;
      // Add band header
-     AddBandToList(M.HeaderBand);
+     AddSameDataLoopBands(M,TFPReportCustomDataHeaderBand);
      // Add group headers
      AddSameDataLoopBands(M,TFPReportCustomGroupHeaderBand);
      // Add band
@@ -1003,7 +1129,7 @@ Var
      // Add group footers
      AddSameDataLoopBands(M,TFPReportCustomGroupFooterBand);
      // Add footer band
-     AddBandTOList(M.FooterBand);
+     AddSameDataLoopBands(M,TFPReportCustomDataFooterBand);
   end;
 
 Var
@@ -1033,14 +1159,14 @@ begin
           I:=-1; // Reset loop
       Inc(I);
       end;
-    MaybeAddBand(TFPReportCustomSummaryBand);
     MaybeAddBand(TFPReportCustomColumnFooterBand);
+    MaybeAddBand(TFPReportCustomSummaryBand);
     // Extract
     I:=0;
     F:=FindBandType(L,TFPReportCustomPageFooterBand,I,True);
     While L.Count>0 do
       AddBandToList(TFPReportCustomBand(L[0]));
-    AddBandToList(F);
+    AddBandToList(F,True);
   finally
     L.Free;
   end;
@@ -1082,9 +1208,9 @@ begin
   YO:=CalcOff(AOffset.Y,PosNeedsYOffset);
   OffsetRect(R,XO,YO);
   if (ApplyToPos in PosNeedsXResize) then
-    R.Right:=CalcSize(R.Right-r.Left,XO,AOffset.X)-r.Left;
+    R.width:=CalcSize(R.Width,XO,AOffset.X);
   if (ApplyToPos in PosNeedsYResize) then
-    R.Bottom:=CalcSize(R.Bottom-R.Top,YO,AOffset.Y)-r.Top;
+    R.Height:=CalcSize(R.Height,YO,AOffset.Y);
 end;
 
 procedure TReportObjectList.DrawSelectionHandles(AOffset : TPoint; ApplyToPos : TResizeHandlePosition);
@@ -1381,42 +1507,50 @@ Var
   Procedure AlignControl (El : TFPReportElement; Hor : THAlignAction; Ver : TValignAction; IsBorder : Boolean);
 
   Var
-    NewRect : TFPReportRect;
-    BHCenter,BVCenter : TFPReportUnits;
+    ElRect : TFPReportRect;
+    BW,BH,BHCenter,BVCenter : TFPReportUnits;
     HOffset,VOffset : TFPReportUnits;
 
   begin
+    BW:=0;
+    BH:=0;
     BHCenter:=0;
     BVCenter:=0;
-    El.Layout.GetBoundsRect(NewRect);
+    El.Layout.GetBoundsRect(ElRect);
     if Assigned(EL.Parent) then
       With EL.Parent.Layout Do
         begin
-        BHCenter:=Width / 2;
-        BVCenter:=Height / 2;
+        BW:=Width;
+        BH:=Height;
+        BHCenter:=BW / 2;
+        BVCenter:=BH / 2;
         end;
     HOffset:=0;
     VOffset:=0;
     Case hor of
-      haleft   : HOffset:=OutLineRect.Left-NewRect.Left;
-      haRight  : HOffset:=OutLineRect.Right-NewRect.Right;
-      haCenter : HOffset:=HCenter-(Newrect.Right+NewRect.Left) / 2;
-      haCentB  : HOffset:=BHCenter-(NewRect.Right+NewRect.Left) / 2;
+      haleft   : HOffset:=OutLineRect.Left-ElRect.Left;
+      haRight  : HOffset:=OutLineRect.Right-ElRect.Right;
+      haCenter : HOffset:=HCenter-(ElRect.Right+ElRect.Left) / 2;
+      haCentB  : HOffset:=BHCenter-(ElRect.Right+ElRect.Left) / 2;
+      haLeftB  : HOffset:=-ElRect.Left;
+      haRightB : HOffset:=BW-EL.Layout.Width-ElRect.Left;
       haSpace  : If Not IsBorder Then
-                   HOffset:=HSCenter-(Newrect.Right+NewRect.Left) / 2;
+                   HOffset:=HSCenter-(ElRect.Right+ElRect.Left) / 2;
     end;
     Case Ver of
-      vaTop    : VOffset:=OutLineRect.Top-NewRect.Top;
-      vaBottom : VOffset:=OutLineRect.Bottom-NewRect.Bottom;
-      vaCenter : VOffset:=VCenter-(Newrect.Bottom+NewRect.Top) / 2;
-      vaCentB  : VOffSet:=BVCenter-(NewRect.Bottom+NewRect.Top) / 2;
+      vaTop    : VOffset:=OutLineRect.Top-ElRect.Top;
+      vaBottom : VOffset:=OutLineRect.Bottom-ElRect.Bottom;
+      vaCenter : VOffset:=VCenter-(ElRect.Bottom+ElRect.Top) / 2;
+      vaCentB  : VOffSet:=BVCenter-(ElRect.Bottom+ElRect.Top) / 2;
+      vatopB   : VOffset:=-ElRect.Top;
+      vaBottomB : VOffset:=BH-EL.Layout.Height-ElRect.Top;
       vaSpace  : If Not IsBorder Then
-                   VOffset:=VSCenter-(Newrect.Bottom+NewRect.Top) / 2;
+                   VOffset:=VSCenter-(ElRect.Bottom+ElRect.Top) / 2;
     end;
     // Go back Relative to the band..
-    NewRect.OffsetRect(HOffset,VOffset);
-    EL.Layout.Left:=NewRect.Left;
-    EL.Layout.Top:=NewRect.Top;
+    ElRect.OffsetRect(HOffset,VOffset);
+    EL.Layout.Left:=ElRect.Left;
+    EL.Layout.Top:=ElRect.Top;
   end;
 
 
@@ -1494,6 +1628,7 @@ begin
         end;
       end;
     end;
+  SelectRectInvalid;
   ReportChanged;
 end;
 

@@ -13,7 +13,7 @@
         <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
     </CompilerOptions>
-    <Files Count="28">
+    <Files Count="29">
       <Item1>
         <Filename Value="fcl-pdf\src\fpfonttextmapping.pp"/>
         <UnitName Value="FPFontTextMapping"/>
@@ -126,6 +126,10 @@
         <Filename Value="lazreport-scripting\nr_const.pas"/>
         <UnitName Value="nr_const"/>
       </Item28>
+      <Item29>
+        <Filename Value="fcl-report\src\fprepdata.pp"/>
+        <UnitName Value="fprepdata"/>
+      </Item29>
     </Files>
     <RequiredPkgs Count="1">
       <Item1>

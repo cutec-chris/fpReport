@@ -12,7 +12,7 @@ uses
   fpreportcanvashelper, fpreportcontnr, fpreportdb, fpreportdom, 
   fpreportfpimageexport, fpreporthtmlexport, fpReportHTMLParser, 
   fpreporthtmlutil, fpreportjson, fpreportpdfexport, fpreportqrcode, 
-  fpReportStreamer, fpimgbarcode, nr_intrp, nr_pars, nr_const, 
+  fpReportStreamer, fpimgbarcode, nr_intrp, nr_pars, nr_const, fprepdata, 
   LazarusPackageIntf;
 
 implementation

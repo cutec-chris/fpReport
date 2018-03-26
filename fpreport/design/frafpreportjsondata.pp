@@ -59,7 +59,7 @@ type
 
 implementation
 
-uses fpreportdatajson;
+uses fpreportjson;
 
 {$R *.lfm}
 

@@ -16,6 +16,7 @@
 unit fpreportdesignobjectlist;
 
 {$mode objfpc}{$H+}
+{$modeswitch advancedrecords}
 { $DEFINE DEBUGROL}
 
 interface
@@ -26,6 +27,18 @@ uses
 Const
   clResizeHandleSingle = clBlack;  // Pen color to draw selection resize handle
   clResizeHandleMulti = cldkGray;  // Pen color to draw selection resize handle, when multiselect
+
+type
+  TRectHelper = record helper for TRect
+  private
+    function GetWidth: Integer;
+    procedure SetWidth(const Value: Integer);
+    function GetHeight: Integer;
+    procedure SetHeight(const Value: Integer);
+  public
+    property Width: Integer read GetWidth write SetWidth;
+    property Height: Integer read GetHeight write SetHeight;
+  end;
 
 Type
   TSelectionSort = (ssNone,ssHorz,ssvert);
@@ -179,6 +192,25 @@ implementation
 
 uses math;
 
+function TRectHelper.GetHeight: Integer;
+begin
+  Result := Bottom - Top;
+end;
+
+procedure TRectHelper.SetHeight(const Value: Integer);
+begin
+  Bottom := Top + Value;
+end;
+
+function TRectHelper.GetWidth: Integer;
+begin
+  Result := Right - Left;
+end;
+
+procedure TRectHelper.SetWidth(const Value: Integer);
+begin
+  Right := Left + Value;
+end;
 Function PointToStr(P : TPoint) : String;
 
 begin
@@ -342,8 +374,13 @@ end;
 procedure TReportObjectList.SelectRectInvalid;
 
 begin
+  {$if FPC_FULLVERSION>30000}
   FLastSelectionBounds:=Default(TRect);
   FLastSelectionRect:=Default(TFPReportRect);
+  {$else}
+  FLastSelectionBounds:=Rect(0,0,0,0);
+  FLastSelectionRect.SetRect(0,0,0,0);
+  {$endif}
 end;
 
 procedure TReportObjectList.EndSelectionUpdate;
@@ -902,7 +939,11 @@ Var
   O : TReportObject;
 
 begin
+  {$if FPC_FULLVERSION>30000}
   D:=Default(TRect);
+  {$else}
+  D:=Rect(0,0,0,0);
+  {$endif}
   Result:=TFPList.Create;
   try
     For I:=0 to Count-1 do
@@ -932,7 +973,11 @@ Var
 
 begin
   BL:=Nil;
+  {$if FPC_FULLVERSION>30000}
   D:=Default(TRect);
+  {$else}
+  D:=Rect(0,0,0,0);
+  {$endif}
   Result:=TFPList.Create;
   try
     try

@@ -4,14 +4,15 @@
 
 unit lazfpreportdesign;
 
-{$warn 5023 off : no warning about unused units}
 interface
 
 uses
-  fpreportdesignreportdata, fpreportdrawruler, fpreportdesignctrl, fpreportdesignobjectlist, frafpreportcsvdata, 
-  frafpreportdbfdata, frafpreportjsondata, frafpreportdata, fraReportObjectInspector, frafpreportsqldbdata, 
-  frmfpreportalignelements, frmconfigreportdata, frmfpreportdataconnectioneditor, frmfpreportdesignermain, frmfpreportimageedit, 
-  frmfpreportmemoedit, frmfpreportpreviewdata, frmfpreportproperties, frmfpreportshapeedit, frmfpreportvariables, 
+  fpreportdesignreportdata, fpreportdrawruler, fpreportdesignctrl, 
+  fpreportdesignobjectlist, frafpreportdata, fraReportObjectInspector, 
+  frmfpreportalignelements, frmconfigreportdata, 
+  frmfpreportdataconnectioneditor, frmfpreportdesignermain, 
+  frmfpreportimageedit, frmfpreportmemoedit, frmfpreportpreviewdata, 
+  frmfpreportproperties, frmfpreportshapeedit, frmfpreportvariables, 
   frmfprdresizeelements, regfpdesigner, FPReportDesigner, LazarusPackageIntf;
 
 implementation

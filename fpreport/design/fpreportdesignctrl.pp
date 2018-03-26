@@ -15,6 +15,7 @@
 unit fpreportdesignctrl;
 
 {$mode objfpc}{$H+}
+{$modeswitch advancedrecords}
 { $DEFINE DEBUGRD}
 
 interface
@@ -387,11 +388,15 @@ begin
     E:=TFPReportMemo.Create(ABand.Report);
     C:=(Source as TMemoDragDrop).Content;
     TFPReportMemo(E).Text:=C;
+    {$if FPC_FULLVERSION>30000}
     R:=Default(TRect);
+    {$else}
+    R:=Rect(0,0,0,0);
+    {$endif}
     OffSetRect(R,X,Y);
     S:=Canvas.TextExtent(C);
-    R.Width:=Round(S.Width*1.2);
-    R.Height:=Round(S.Height*1.2);
+    R.Width:=Round(S.cx*1.2);
+    R.Height:=Round(S.cy*1.2);
     Opts:=TMemoDragDrop(Source).Options;
     end;
   DoAddControl(ABand,E,R,False);

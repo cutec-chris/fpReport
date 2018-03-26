@@ -19,7 +19,12 @@ unit frafpreportdata;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, ComCtrls, StdCtrls, fpreport, fpexprpars,
+  Classes, SysUtils, FileUtil, Forms, Controls, ComCtrls, StdCtrls, fpreport,
+  {$IF FPC_FULLVERSION>=30101}
+    fpexprpars,
+  {$ELSE}
+    fprepexprpars,
+  {$ENDIF}
   fpreportdesignobjectlist;
 
 type
@@ -41,7 +46,7 @@ type
     procedure TVVariablesMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
   private
     FPageCount : TFPExprIdentifierDef;
-    FIdentifiers: TFPExprIdentifierDefs;
+    FIdentifiers: fprepexprpars.TFPExprIdentifierDefs;
     FUserVariables : TTreeNode;
     FBuiltinVariables : TTreeNode;
     FDataLastDown : TPoint;

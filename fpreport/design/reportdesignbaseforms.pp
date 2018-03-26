@@ -21,7 +21,7 @@ interface
 
 uses
   Classes, SysUtils, fpreport, forms, db, fpreportdesignobjectlist,
-  fpreportdata, fpreportdesignreportdata;
+  fprepdata, fpreportdesignreportdata;
 
 Type
   { TReportEditorForm }

@@ -478,7 +478,14 @@ begin
           if (B=O.Element.Parent) and O.MatchSelection(ObjectSelection) Then
             begin
 {$IFDEF DEBUGRD}Writeln('PaintObjects(',ObjectSelection,'): Element selected for draw: ',O.Element.ClassName);{$ENDIF}
-            FCanvasExport.RenderElement(B,O.Element);
+            try
+              FCanvasExport.RenderElement(B,O.Element);
+            except
+              on e : Exception do
+                begin
+
+                end;
+            end;
             end;
           end;
         end;

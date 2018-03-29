@@ -150,7 +150,7 @@ type
 implementation
 
 uses
-  ftFont_n,
+  ftFont,
   fpTTF,
   fpparsettf,
   fpwritepng;
@@ -416,7 +416,7 @@ begin
     Canvas.TextOut(
         mmToPixels(lXPos),
         mmToPixels(lYPos),
-        UTF8Decode(txtblk.Text)
+        {$if FPC_FULLVERSION>30000}txtblk.Text{$ELSE} UTF8Decode(txtblk.Text){$ENDIF}
     );
   end;
 end;
@@ -898,4 +898,5 @@ end;
 initialization
   TFPReportExportfpImage.RegisterExporter;
 end.
+
 

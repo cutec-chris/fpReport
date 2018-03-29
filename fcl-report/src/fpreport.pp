@@ -110,7 +110,7 @@ type
   TFPReportFrameLine      = (flTop, flBottom, flLeft, flRight);
   TFPReportFrameLines     = set of TFPReportFrameLine;
   TFPReportFrameShape     = (fsNone, fsRectangle, fsRoundedRect, fsDoubleRect, fsShadow);
-  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream, rfkCurrency, rfkMemoStream);
+  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream, rfkCurrency);
   TFPReportStretchMode    = (smDontStretch, smActualHeight, smActualHeightStretchOnly, smActualHeightShrinkOnly, smMaxHeight);
   TFPReportHTMLTag        = (htRegular, htBold, htItalic);
   TFPReportHTMLTagSet     = set of TFPReportHTMLTag;
@@ -2241,7 +2241,11 @@ Const
 {$IFDEF UNIX}
   cDefaultFont = 'LiberationSans';
 {$ELSE}
+{$IFDEF WINDOWS}
+  cDefaultFont = 'Arial';
+{$ELSE}
   cDefaultFont = 'Helvetica';
+{$ENDIF}
 {$ENDIF}
 
 Var
@@ -3173,9 +3177,7 @@ end;
 function TFPReportVariable.GetAsCurrency: Currency;
 begin
   CheckType(rtCurrency);
-  {$IF FPC_FULLVERSION>=30101}
   Result:=FValue.ResCurrency;
-  {$endif}
 end;
 
 function TFPReportVariable.GetAsDateTime: TDateTime;
@@ -3222,9 +3224,7 @@ end;
 procedure TFPReportVariable.SetAsCurrency(AValue: Currency);
 begin
   FValue.ResultType:=rtCurrency;
-  {$IF FPC_FULLVERSION>=30101}
   FValue.ResCurrency:=AValue;
-  {$endif}
 end;
 
 procedure TFPReportVariable.SetAsDateTime(AValue: TDateTime);
@@ -6054,9 +6054,7 @@ begin
     On E : EComponentError do
       begin
       Name:=AllocateName;
-      {$IF FPC_FULLVERSION>=30400}
       AReader.Modified;
-      {$endif}
       end;
   end;
 end;
@@ -6810,9 +6808,7 @@ begin
     rtString  : Result := Res.ResString;
     rtInteger : Result := IntToStr(Res.ResInteger);
     rtFloat   : Result := FloatToStr(Res.ResFloat);
-    {$IF FPC_FULLVERSION>=30101}
     rtCurrency  : Result := CurrToStr(Res.ResCurrency);
-    {$endif}
     rtBoolean : Result := BoolToStr(Res.resBoolean, True);
     rtDateTime : Result := FormatDateTime(GetDateTimeFormat, Res.resDateTime);
   end;
@@ -9032,7 +9028,7 @@ procedure TFPReportCustomBandWithData.Validate(aErrors: TStrings);
 begin
   inherited Validate(aErrors);
   if (Data=Nil) then
-    aErrors.Add(Format('Band "%s" has no data assigned.',[Name]));
+    aErrors.Add('Band "%s" has no data assigned.',[Name]);
 end;
 
 { TFPReportCustomGroupFooterBand }
@@ -9926,9 +9922,7 @@ procedure TFPReportDataField.GetRTValue(Var Result: TFPExpressionResult;
           rtBoolean:    Result.ResBoolean   := False;
           rtInteger:    Result.ResInteger   := 0;
           rtFloat:      Result.ResFloat     := 0.0;
-          {$IF FPC_FULLVERSION>=30101}
           rtCurrency:   Result.ResCurrency  := 0.0;
-          {$endif}
           rtDateTime:   Result.ResDateTime  := 0.0;
           rtString:     Result.ResString    := '';
         end
@@ -9937,9 +9931,7 @@ procedure TFPReportDataField.GetRTValue(Var Result: TFPExpressionResult;
           rtBoolean:    Result.ResBoolean   := pValue;
           rtInteger:    Result.ResInteger   := pValue;
           rtFloat:      Result.ResFloat     := pValue;
-          {$IF FPC_FULLVERSION>=30101}
           rtCurrency:   Result.ResCurrency  := pValue;
-          {$endif}
           rtDateTime:   Result.ResDateTime  := pValue;
           rtString:     Result.ResString    := pValue;
         end;
@@ -11122,6 +11114,8 @@ end;
 
 procedure TFPReportLayouter.ShowDataHeaderBand;
 begin
+  if Not assigned(CurrentLoop.FDataHeader) then
+    exit;
   if CurrentLoop.FDataHeaderPrinted then
     Exit; // nothing further to do
   if ShowBandWithChilds(CurrentLoop.FDataHeader) then
@@ -11625,6 +11619,9 @@ begin
   //  write(': ',TFPReportCustomGroupFooterBand(aBand).GroupHeader.GroupCondition);
   //writeln(': Space = ', FormatFloat('#,##0.0', FSpaceLeft));
   Result := False;
+  if not Assigned(aBand) then
+    Exit;
+
   lHandledBands := TBandList.Create;
   try
     lBand := aBand;
@@ -11669,12 +11666,10 @@ begin
     not Report.FRTInRepeatedGroupHeader and
     (lHandledBands.Count > 0) then
       TFPReportCustomGroupHeaderBand(aBand).StoreRTBands(lHandledBands);
-    if Assigned(aBand) then
-      begin
-        aBand.FIsOverflowed := False;
-        aBand.AfterPrintWithChilds;
-      end;
+
+    aBand.FIsOverflowed := False;
     Report.FRTIsOverflowed := False;
+    aBand.AfterPrintWithChilds;
   finally
     lHandledBands.Free;
   end;

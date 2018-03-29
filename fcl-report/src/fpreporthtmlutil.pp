@@ -468,7 +468,7 @@ begin
     aStyle.Delimiter:=' ';
     {$else}
     aStyle.LineBreak:=' ';
-    {$endif}
+    {$ENDIF}
     AElement['style']:=aStyle.text
     end
   else
@@ -914,4 +914,5 @@ begin
 end;
 
 end.
+
 

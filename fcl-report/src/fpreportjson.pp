@@ -65,6 +65,12 @@ resourcestring
   SErrInvalidJSONAtPath = 'Invalid JSON at Path. Need Array or Object';
   SErrInvalidPath = 'Path "%s" is not valid';
 
+{$if FPC_FULLVERSION<30000}
+Const
+  StructuredJSONTypes  = [jtArray,jtObject];
+{$ENDIF}
+
+
 { TFPReportJSONData }
 
 function TFPReportJSONData.GetJSON: TJSONStringType;
@@ -76,6 +82,7 @@ begin
 end;
 
 procedure TFPReportJSONData.SetRoot;
+
 
 Var
   d : TJSONData;
@@ -93,20 +100,16 @@ begin
         Raise EReportError.CreateFmt(SErrInvalidPath,[Path]);
       end
     end;
-  {$if FPC_FULLVERSION>30000}
   if Assigned(D) and Not (D.JSONType in StructuredJSONTypes) then
     Raise EReportError.Create(SErrInvalidJSONAtPath);
-  {$endif}
   FRoot:=D;
 end;
 
 procedure TFPReportJSONData.SetJSON(AValue: TJSONData);
 begin
   if FJSON=AValue then Exit;
-  {$if FPC_FULLVERSION>30000}
   if Assigned(AValue) and Not (AValue.JSONType in StructuredJSONTypes) then
     Raise EReportError.Create(SErrInvalidJSON);
-  {$endif}
   if OwnsJSON then
     FreeAndNil(FJSON);
   FJSON:=AValue;
@@ -178,7 +181,7 @@ begin
       ntInt64 : AValue:=D.AsInt64;
       {$if FPC_FULLVERSION>30000}
       ntQWord : AValue:=D.AsQWord;
-      {$endif}
+      {$ENDIF}
     end;
   jtBoolean:
     AValue:=D.AsBoolean;
@@ -292,4 +295,5 @@ begin
 end;
 
 end.
+
 

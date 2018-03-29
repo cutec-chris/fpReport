@@ -17,7 +17,7 @@
   HTML Export filter.
 
   FPImage is included as standard with FPC. This exporter uses those classes
-  to generate image output. 
+  to generate image output.
 
 }
 unit fpreporthtmlexport;
@@ -814,7 +814,7 @@ begin
       begin
       D:=ExtractFilePath(FBasePageFileName);
       if (CSSDir<>'') then
-        D:=D+CSSDir+PathDelim; 
+        D:=D+CSSDir+PathDelim;
       FStyleContent.SaveToFile(D+ChangeFileExt(ExtractFileName(FBasePageFileName),'.css'));
       end;
     seStyleTag :
@@ -1069,6 +1069,7 @@ var
   BS,S,aFamily,aStyle,aWeight : String;
   bDiv,span : THTMLElement;
   FixedPos : Boolean;
+  L : THTMLLinkElement;
 
 begin
   lMemo := TFPReportMemo(AMemo);
@@ -1143,9 +1144,19 @@ begin
         S:=S+Format(' font-family: "%s";',[txtblk.FontName]);
       S:=S+ColorToStyle('color',TxtBlk.FGColor);
       ApplyStyle(bDiv,S);
-      span:=FDoc.CreateSpanElement;
-      span.appendChild(FDoc.CreateTextNode(txtBlk.Text));
-      bDiv.AppendChild(span);
+      if txtBlk is TFPHTTPTextBlock then
+        begin
+        L:=FDoc.CreateLinkElement;
+        L.HRef:=TFPHTTPTextBlock(txtBlk).URL;
+        L.AppendChild(FDoc.CreateTextNode(txtBlk.Text));
+        bDiv.AppendChild(L);
+        end
+      else
+        begin
+        span:=FDoc.CreateSpanElement;
+        span.appendChild(FDoc.CreateTextNode(txtBlk.Text));
+        bDiv.AppendChild(span);
+        end;
       end;
     end;
 end;
@@ -1296,4 +1307,5 @@ end;
 initialization
   TFPReportExportHTML.RegisterExporter;
 end.
+
 

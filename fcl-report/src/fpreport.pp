@@ -110,7 +110,7 @@ type
   TFPReportFrameLine      = (flTop, flBottom, flLeft, flRight);
   TFPReportFrameLines     = set of TFPReportFrameLine;
   TFPReportFrameShape     = (fsNone, fsRectangle, fsRoundedRect, fsDoubleRect, fsShadow);
-  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream, rfkCurrency);
+  TFPReportFieldKind      = (rfkString, rfkBoolean, rfkInteger, rfkFloat, rfkDateTime, rfkStream, rfkCurrency, rfkMemoStream);
   TFPReportStretchMode    = (smDontStretch, smActualHeight, smActualHeightStretchOnly, smActualHeightShrinkOnly, smMaxHeight);
   TFPReportHTMLTag        = (htRegular, htBold, htItalic);
   TFPReportHTMLTagSet     = set of TFPReportHTMLTag;
@@ -9028,7 +9028,7 @@ procedure TFPReportCustomBandWithData.Validate(aErrors: TStrings);
 begin
   inherited Validate(aErrors);
   if (Data=Nil) then
-    aErrors.Add('Band "%s" has no data assigned.',[Name]);
+    aErrors.Add(Format('Band "%s" has no data assigned.',[Name]));
 end;
 
 { TFPReportCustomGroupFooterBand }

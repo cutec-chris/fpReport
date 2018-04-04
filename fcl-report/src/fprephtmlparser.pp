@@ -67,14 +67,14 @@
 
  The code is provided "AS-IS" and without WARRANTY OF ANY KIND,
  expressed, implied or otherwise, including and without limitation, any
- warranty of merchantability or fitness for a  particular purpose. 
+ warranty of merchantability or fitness for a  particular purpose.Â 
 
  In no event shall the author be liable for any special, incidental,
  indirect or consequential damages whatsoever (including, without
  limitation, damages for loss of profits, business interruption, loss
  of information, or any other loss), whether or not advised of the
  possibility of damage, and on any theory of liability, arising out of
- or in connection with the use or inability to use this software.  
+ or in connection with the use or inability to use this software.Â Â 
 
 
 --------------------------------------------------------------------------------
@@ -115,7 +115,7 @@
 
 // {$DEFINE DEBUGLN_ON}
 
-unit fpReportHTMLParser;
+unit fprephtmlparser;
 
 
 interface

@@ -10,9 +10,9 @@ uses
   FPFontTextMapping, fpparsettf, fpPDF, fpTTF, fpttfencodings, fpTTFSubsetter, 
   fpExtFuncs, fpjsonreport, fprepexprpars, fpreport, fpreportbarcode, 
   fpreportcanvashelper, fpreportcontnr, fpreportdb, fpreportdom, 
-  fpreportfpimageexport, fpreporthtmlexport, fpReportHTMLParser, 
+  fpreportfpimageexport, fpreporthtmlexport, fprephtmlparser, 
   fpreporthtmlutil, fpreportjson, fpreportpdfexport, fpreportqrcode, 
-  fpReportStreamer, fpimgbarcode, nr_intrp, nr_pars, nr_const, fprepdata, 
+  fpRepStreamer, fpimgbarcode, nr_intrp, nr_pars, nr_const, fprepdata, 
   LazarusPackageIntf;
 
 implementation

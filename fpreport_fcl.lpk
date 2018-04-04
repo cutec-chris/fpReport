@@ -87,8 +87,8 @@
         <UnitName Value="fpreporthtmlexport"/>
       </Item18>
       <Item19>
-        <Filename Value="fcl-report\src\fpreporthtmlparser.pp"/>
-        <UnitName Value="fpReportHTMLParser"/>
+        <Filename Value="fcl-report\src\fprephtmlparser.pp"/>
+        <UnitName Value="fprephtmlparser"/>
       </Item19>
       <Item20>
         <Filename Value="fcl-report\src\fpreporthtmlutil.pp"/>
@@ -107,8 +107,8 @@
         <UnitName Value="fpreportqrcode"/>
       </Item23>
       <Item24>
-        <Filename Value="fcl-report\src\fpreportstreamer.pp"/>
-        <UnitName Value="fpReportStreamer"/>
+        <Filename Value="fcl-report\src\fprepstreamer.pp"/>
+        <UnitName Value="fpRepStreamer"/>
       </Item24>
       <Item25>
         <Filename Value="fcl-image\src\fpimgbarcode.pp"/>

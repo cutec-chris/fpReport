@@ -123,7 +123,7 @@ var
       ftVarBytes:       Result := rfkStream;
       ftAutoInc:        Result := rfkInteger;
       ftBlob:           Result := rfkStream;
-      ftMemo:           Result := rfkMemoStream;
+      ftMemo:           Result := rfkString;
       ftGraphic:        Result := rfkStream;
       ftFmtMemo:        Result := rfkString;
       //ftParadoxOle:

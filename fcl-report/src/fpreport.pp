@@ -689,7 +689,7 @@ type
     procedure SetVisibleExpr(AValue: String);
   protected
     Procedure ParentFontChanged; virtual;
-    procedure ApplyStretchMode(const ADesiredHeight: TFPReportUnits);
+    procedure ApplyStretchMode(const ADesiredHeight: TFPReportUnits);virtual;
     function GetDateTimeFormat: String; virtual;
     function ExpandMacro(const s: String; const AIsExpr: boolean): TFPReportString; virtual;
     function GetReportBand: TFPReportCustomBand; virtual;
@@ -757,6 +757,7 @@ type
     procedure PrepareObjects(aRTParent: TFPReportElement); virtual;
     { This should run against the runtime version of the children }
     procedure RecalcLayout; override;
+    procedure ApplyStretchMode(const ADesiredHeight: TFPReportUnits);override;
   public
     destructor  Destroy; override;
     Procedure   Validate(aErrors : TStrings); override;
@@ -4097,12 +4098,7 @@ begin
   if Not Assigned(RTLayout) then
     Exit;
   Case StretchMode of
-    smMaxHeight:
-      begin
-      if Assigned(Parent) and Assigned(RTLayout) then
-        RTLayout.Height:=Parent.RTLayout.Height-RTLayout.Top;
-      end;
-    smActualHeight:
+    smMaxHeight,smActualHeight:
       begin
       RTLayout.Height := aDesiredHeight;
       end;
@@ -7287,6 +7283,30 @@ begin
   if Assigned(FChildren) then
     for i := 0 to FChildren.Count -1 do
       Child[i].RecalcLayout;
+end;
+
+procedure TFPReportElementWithChildren.ApplyStretchMode(
+  const ADesiredHeight: TFPReportUnits);
+var
+  h: TFPReportUnits;
+  i: Integer;
+  c: TFPReportElement;
+begin
+  inherited ApplyStretchMode(ADesiredHeight);
+  h := RTLayout.Height;
+  for i := 0 to ChildCount-1 do
+  begin
+    c := Child[i];
+    if c.RTLayout.Top + c.RTLayout.Height > h then
+      h := c.RTLayout.Top + c.RTLayout.Height;
+  end;
+  RTLayout.Height := h;
+  for i := 0 to ChildCount-1 do
+  begin
+    c := Child[i];
+    if c.StretchMode = smMaxHeight then
+      c.RTLayout.Height := h-c.RTLayout.Top;
+  end;
 end;
 
 destructor TFPReportElementWithChildren.Destroy;

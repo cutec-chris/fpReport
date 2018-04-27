@@ -49,7 +49,7 @@ Type
 
 implementation
 
-uses fpTTF,dateutils,base64,FPReadGif,FPReadJPEG;
+uses fpTTF,dateutils,base64,FPReadGif,FPReadJPEG,fpexprpars;
 
 function PixelsToMM(Const Dist: double) : TFPReportUnits;
 begin
@@ -78,6 +78,8 @@ function TFPLazReport.FixDataFields(aFieldName: string): string;
 var
   k : Integer = 0;
   atmp : string;
+  HasBR: Boolean;
+  tmp: String;
 begin
   Result := aFieldName;
   if Assigned(FData) then
@@ -89,6 +91,23 @@ begin
       end;
   Result := StringReplace(Result,'PAGE#','PageNo',[rfReplaceAll,rfIgnoreCase]);
   Result := StringReplace(Result,'[DATE]','[TODAY]',[rfReplaceAll,rfIgnoreCase]);
+  Result := StringReplace(Result,#13#10,'',[rfReplaceAll,rfIgnoreCase]);
+  HasBR := copy(Result,0,1)='[';
+  Result := StringReplace(Result,'[','',[rfReplaceAll,rfIgnoreCase]);
+  Result := StringReplace(Result,']','',[rfReplaceAll,rfIgnoreCase]);
+  if pos('sum(',lowercase(Result))>0 then
+    begin
+      tmp := copy(Result,0,pos('sum(',lowercase(Result))+3);
+      Result := copy(Result,pos('sum(',lowercase(Result))+4,length(Result));
+      if pos(',',Result)<pos(')',Result) then
+        begin
+          tmp := tmp+copy(Result,0,pos(',',Result)-1);
+          Result := copy(Result,pos(')',Result),length(Result));
+        end;
+      tmp := tmp+Result;
+      Result := tmp;
+    end;
+  if HasBR then Result := '['+Result+']';
 end;
 
 procedure TFPLazReport.LoadFromXML(LazReport: TXMLDocument);
@@ -284,6 +303,12 @@ begin
                                 tmp := copy(tmp,2,system.length(tmp)-2);//remove []
                               tmp := FixDataFields(tmp);
                               TFPReportGroupHeaderBand(aBand).GroupCondition:=tmp;
+                              tmp := GetProperty(nPage.ChildNodes.Item[j],'Condition');
+                              if copy(tmp,1,1)='P' then
+                                tmp := copy(tmp,2,system.length(tmp));
+                              if pos('.',tmp)>0 then tmp := copy(tmp,0,pos('.',tmp)-1);
+                              if Assigned(FData) and (FData.FindComponent(tmp) <> nil) then
+                                TFPReportGroupHeaderBand(aBand).Data := TFPreportData(FData.FindComponent(tmp));
                             end;
                           'btGroupFooter':aBand := TFPReportGroupFooterBand.Create(aPage);
                           else
@@ -476,5 +501,16 @@ begin
   else inherited;
 end;
 
+Procedure BuiltinIFS(Var Result : TFPExpressionResult; Const Args : TExprParameterArray);
+
+begin
+  If Args[0].resBoolean then
+    Result.resString:=Args[1].resString
+  else
+    Result.resString:=Args[2].resString
+end;
+
+initialization
+  BuiltinIdentifiers.AddFunction(bcBoolean,'IF','S','BSS',@BuiltinIFS);
 end.
 

@@ -857,8 +857,8 @@ Resourcestring
   SErrUnexpectedEndOfExpression = 'Unexpected end of expression';
   SErrUnknownComparison = 'Internal error: Unknown comparison';
   SErrUnknownBooleanOp = 'Internal error: Unknown boolean operation';
-  SErrBracketExpected = 'Expected ) bracket at position %d, but got %s';
-  SerrUnknownTokenAtPos = 'Unknown token at pos %d : %s';
+  SErrBracketExpected = 'Expected ) bracket at position %d, but got %s in %s';
+  SerrUnknownTokenAtPos = 'Unknown token at pos %d : %s in %s';
   SErrLeftBracketExpected = 'Expected ( bracket at position %d, but got %s';
   SErrInvalidFloat = '%s is not a valid floating-point value';
   SErrUnknownIdentifier = 'Unknown identifier: %s';
@@ -1978,7 +1978,7 @@ begin
   else if (TokenType in [ttTrue,ttFalse]) then
     Result:=TFPConstExpression.CreateBoolean(TokenType=ttTrue)
   else if Not (TokenType in [ttIdentifier,ttIf,ttcase]) then
-    ParserError(Format(SerrUnknownTokenAtPos,[Scanner.Pos,CurrentToken]))
+    ParserError(Format(SerrUnknownTokenAtPos,[Scanner.Pos,CurrentToken,FExpression]))
   else
     begin
     IFF:=TokenType=ttIf;
@@ -2023,7 +2023,7 @@ begin
               ParserError(Format(SErrCommaExpected,[Scanner.Pos,CurrentToken]))
         Until (AI=ACount) or ((ACount<0) and (TokenType=ttRight));
         If TokenType<>ttRight then
-          ParserError(Format(SErrBracketExpected,[Scanner.Pos,CurrentToken]));
+          ParserError(Format(SErrBracketExpected,[Scanner.Pos,CurrentToken,FExpression]));
       except
         On E : Exception do
           begin

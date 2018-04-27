@@ -853,7 +853,7 @@ var
 Resourcestring
   SBadQuotes        = 'Unterminated string';
   SUnknownDelimiter = 'Unknown delimiter character: "%s"';
-  SErrUnknownCharacter = 'Unknown character at pos %d: "%s"';
+  SErrUnknownCharacter = 'Unknown character at pos %d: "%s" in %s';
   SErrUnexpectedEndOfExpression = 'Unexpected end of expression';
   SErrUnknownComparison = 'Internal error: Unknown comparison';
   SErrUnknownBooleanOp = 'Internal error: Unknown boolean operation';
@@ -1488,7 +1488,7 @@ begin
   else if IsAlpha(C) or (C='"') then
     Result:=DoIdentifier
   else
-    ScanError(Format(SErrUnknownCharacter,[FPos,C]))  ;
+    ScanError(Format(SErrUnknownCharacter,[FPos,C,FSource]))  ;
   FTokenType:=Result;
 end;
 

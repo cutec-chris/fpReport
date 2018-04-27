@@ -99,7 +99,7 @@ begin
     begin
       tmp := copy(Result,0,pos('sum(',lowercase(Result))+3);
       Result := copy(Result,pos('sum(',lowercase(Result))+4,length(Result));
-      if pos(',',Result)<pos(')',Result) then
+      if (pos(',',Result)>0) and (pos(',',Result)<pos(')',Result)) then
         begin
           tmp := tmp+copy(Result,0,pos(',',Result)-1);
           Result := copy(Result,pos(')',Result),length(Result));

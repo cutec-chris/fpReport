@@ -40,7 +40,7 @@ Type
     procedure SaveToStream(const aStream: TStream);
     Procedure LoadFromJSON(aJSON : TJSONObject); virtual;
     Procedure SavetoJSON(aJSON : TJSONObject); virtual;
-    Procedure LoadFromFile(const aFileName : String);
+    Procedure LoadFromFile(const aFileName : String);virtual;
     Procedure SaveToFile(const aFileName : String);
     Property DesignTimeJSON : TJSONObject Read FDesignTimeJSON;
   end;

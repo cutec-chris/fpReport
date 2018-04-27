@@ -8,12 +8,12 @@ interface
 
 uses
   FPFontTextMapping, fpparsettf, fpPDF, fpTTF, fpttfencodings, fpTTFSubsetter, 
-  fpExtFuncs, fpjsonreport, fprepexprpars, fpreport, fpreportbarcode, 
+  fpExtFuncs, fplazreport, fprepexprpars, fpreport, fpreportbarcode, 
   fpreportcanvashelper, fpreportcontnr, fpreportdb, fpreportdom, 
   fpreportfpimageexport, fpreporthtmlexport, fpReportHTMLParser, 
   fpreporthtmlutil, fpreportjson, fpreportpdfexport, fpreportqrcode, 
   fpReportStreamer, fpimgbarcode, nr_intrp, nr_pars, nr_const, fprepdata, 
-  LazarusPackageIntf;
+  fpjsonreport, LazarusPackageIntf;
 
 implementation
 

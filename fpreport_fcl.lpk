@@ -13,7 +13,7 @@
         <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
     </CompilerOptions>
-    <Files Count="29">
+    <Files Count="30">
       <Item1>
         <Filename Value="fcl-pdf\src\fpfonttextmapping.pp"/>
         <UnitName Value="FPFontTextMapping"/>
@@ -43,8 +43,8 @@
         <UnitName Value="fpExtFuncs"/>
       </Item7>
       <Item8>
-        <Filename Value="fcl-report\src\fpjsonreport.pp"/>
-        <UnitName Value="fpjsonreport"/>
+        <Filename Value="fcl-report\src\fplazreport.pp"/>
+        <UnitName Value="fplazreport"/>
       </Item8>
       <Item9>
         <Filename Value="fcl-report\src\fprepexprpars.pp"/>
@@ -130,6 +130,10 @@
         <Filename Value="fcl-report\src\fprepdata.pp"/>
         <UnitName Value="fprepdata"/>
       </Item29>
+      <Item30>
+        <Filename Value="fcl-report\src\fpjsonreport.pp"/>
+        <UnitName Value="fpjsonreport"/>
+      </Item30>
     </Files>
     <RequiredPkgs Count="1">
       <Item1>

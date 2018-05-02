@@ -304,6 +304,13 @@ begin
                               tmp := FixDataFields(tmp,True);
                               TFPReportGroupHeaderBand(aBand).GroupCondition:=tmp;
                               tmp := GetProperty(nPage.ChildNodes.Item[j],'Condition');
+                              if pos('(',tmp)>0 then
+                                begin
+                                  tmp := copy(tmp,pos('(',tmp)+1,system.length(tmp));
+                                  tmp := copy(tmp,0,pos(')',tmp)-1);
+                                end;
+                              if copy(tmp,0,1)='[' then
+                                tmp := copy(tmp,2,system.length(tmp)-2);//remove []
                               if copy(tmp,1,1)='P' then
                                 tmp := copy(tmp,2,system.length(tmp));
                               if pos('.',tmp)>0 then tmp := copy(tmp,0,pos('.',tmp)-1);

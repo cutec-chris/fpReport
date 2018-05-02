@@ -108,6 +108,15 @@ begin
       tmp := tmp+Result;
       Result := tmp;
     end;
+  while pos('([',Result)>0 do
+    begin
+      tmp := copy(Result,0,pos('([',Result)-1)+'(';
+      Result := copy(Result,pos('([',Result)+2,length(Result));
+      tmp += copy(Result,0,pos(']',Result)-1);
+      Result := copy(Result,pos(']',Result)+1,length(Result));
+      tmp += Result;
+      Result := tmp;
+    end;
 end;
 
 procedure TFPLazReport.LoadFromXML(LazReport: TXMLDocument);

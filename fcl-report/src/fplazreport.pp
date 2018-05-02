@@ -36,7 +36,7 @@ Type
   Protected
   Public
     constructor Create(AOwner: TComponent); override;
-    function FixDataFields(aFieldName : string) : string;
+    function FixDataFields(aFieldName : string;RemoveBrackets : Boolean = False) : string;
     property MemoClass : TFPReportElementClass read FMemoClass write FmemoClass;
     Procedure LoadFromXML(LazReport : TXMLDocument); virtual;
     Procedure LoadFromFile(const aFileName : String);override;
@@ -74,11 +74,11 @@ begin
   FData := Owner;
 end;
 
-function TFPLazReport.FixDataFields(aFieldName: string): string;
+function TFPLazReport.FixDataFields(aFieldName: string; RemoveBrackets: Boolean
+  ): string;
 var
   k : Integer = 0;
   atmp : string;
-  HasBR: Boolean;
   tmp: String;
 begin
   Result := aFieldName;
@@ -91,10 +91,11 @@ begin
       end;
   Result := StringReplace(Result,'PAGE#','PageNo',[rfReplaceAll,rfIgnoreCase]);
   Result := StringReplace(Result,'[DATE]','[TODAY]',[rfReplaceAll,rfIgnoreCase]);
-  Result := StringReplace(Result,#13#10,'',[rfReplaceAll,rfIgnoreCase]);
-  HasBR := copy(Result,0,1)='[';
-  Result := StringReplace(Result,'[','',[rfReplaceAll,rfIgnoreCase]);
-  Result := StringReplace(Result,']','',[rfReplaceAll,rfIgnoreCase]);
+  if RemoveBrackets then
+    begin
+      Result := StringReplace(Result,'[','',[rfReplaceAll,rfIgnoreCase]);
+      Result := StringReplace(Result,']','',[rfReplaceAll,rfIgnoreCase]);
+    end;
   if pos('sum(',lowercase(Result))>0 then
     begin
       tmp := copy(Result,0,pos('sum(',lowercase(Result))+3);
@@ -107,7 +108,6 @@ begin
       tmp := tmp+Result;
       Result := tmp;
     end;
-  if HasBR then Result := '['+Result+']';
 end;
 
 procedure TFPLazReport.LoadFromXML(LazReport: TXMLDocument);
@@ -301,7 +301,7 @@ begin
                               tmp := GetProperty(nPage.ChildNodes.Item[j],'Condition');
                               if copy(tmp,0,1)='[' then
                                 tmp := copy(tmp,2,system.length(tmp)-2);//remove []
-                              tmp := FixDataFields(tmp);
+                              tmp := FixDataFields(tmp,True);
                               TFPReportGroupHeaderBand(aBand).GroupCondition:=tmp;
                               tmp := GetProperty(nPage.ChildNodes.Item[j],'Condition');
                               if copy(tmp,1,1)='P' then

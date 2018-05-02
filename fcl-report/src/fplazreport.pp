@@ -80,6 +80,7 @@ var
   k : Integer = 0;
   atmp : string;
   tmp: String;
+  tmp1: String;
 begin
   Result := aFieldName;
   if Assigned(FData) then
@@ -116,6 +117,23 @@ begin
       Result := copy(Result,pos(']',Result)+1,length(Result));
       tmp += Result;
       Result := tmp;
+    end;
+  if pos('[',Result)>0 then
+    begin
+      tmp := copy(Result,pos('[',Result)+1,length(Result));
+      if (pos('[',tmp)>0) and (pos('[',tmp)<pos(']',tmp)) then
+        begin
+          tmp := copy(Result,0,pos('[',Result)-1);
+          Result := copy(Result,pos('[',Result)+1,length(Result));
+          tmp1 := '';
+          while pos(']',Result)>0 do
+            begin
+              tmp1 += copy(Result,0,pos(']',result)-1);
+              Result := copy(Result,pos(']',result)+1,length(Result));
+            end;
+          tmp+=StringReplace(tmp1,'[','',[rfReplaceAll]);
+          tmp+=Result;
+        end;
     end;
 end;
 

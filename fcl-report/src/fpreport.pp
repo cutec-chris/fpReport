@@ -7551,7 +7551,7 @@ begin
     lBand := TFPReportCustomBand(AChild);
     FBands.Add(lBand);
     ApplyBandWidth(lBand);
-    if (AChild is TFPReportCustomBandWithData) then
+    if (AChild is TFPReportCustomBandWithData) and (not Assigned(TFPReportCustomBandWithData(AChild).Data)) then
       TFPReportCustomBandWithData(AChild).Data := self.Data;
     end;
 end;

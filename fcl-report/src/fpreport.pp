@@ -5434,17 +5434,6 @@ begin
   ImageID:=R.Images[I].ID;
 end;
 
-procedure TFPReportCustomImage.LoadFromStream(const AStream: TStream; aHandler: TFPCustomImageReaderClass);
-
-var
-  R : TFPCustomReport;
-  i : integer;
-begin
-  R:=Report;
-  I:=R.Images.AddFromStream(aStream,aHandler,True);
-  ImageID:=R.Images[I].ID;
-end;
-
 procedure TFPReportCustomImage.LoadPNGFromStream(AStream: TStream);
 
 var

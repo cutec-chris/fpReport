@@ -4048,9 +4048,8 @@ begin
     smMaxHeight:
       begin
       RTLayout.Height := aDesiredHeight;
-      if Assigned(Parent) and Assigned(RTLayout) then
-        if Parent.RTLayout.Height > RTLayout.Height then
-          RTLayout.Height:=Parent.RTLayout.Height;
+      if Parent.RTLayout.Height-RTLayout.Top>RTLayout.Height then
+        RTLayout.Height:=Parent.RTLayout.Height-RTLayout.Top;
       end;
     smActualHeight:
       begin

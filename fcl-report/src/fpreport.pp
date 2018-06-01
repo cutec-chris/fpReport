@@ -1950,7 +1950,6 @@ type
     procedure   SetLinkColor(AValue: TFPReportColor);
     procedure   SetTextAlignment(AValue: TFPReportTextAlignment);
     procedure   SetOptions(const AValue: TFPReportMemoOptions);
-    procedure   ParseText;
     procedure   ClearExpressionNodes;
     procedure   AddSingleTextBlock(const AText: string);
     procedure   AddMultipleTextBlocks(const AText: string);
@@ -1958,6 +1957,7 @@ type
     procedure   SetFont(const AValue: TFPReportFont);
     procedure   CullTextOutOfBounds;
   protected
+    procedure   ParseText;virtual;
     procedure   ReassignParentFont;
     procedure   ParentFontChanged; override;
     function    CreateTextAlignment: TFPReportTextAlignment; virtual;

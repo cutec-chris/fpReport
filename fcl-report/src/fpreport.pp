@@ -1121,10 +1121,14 @@ type
   { TFPReportCustomPageHeaderBand }
 
   TFPReportCustomPageHeaderBand = class(TFPReportCustomBand)
+  private
+    FPrintAfterReportTitle: Boolean;
   protected
   public
+    constructor Create(AOwner: TComponent); override;
     Class Function ElementType : String; override;
     Class Function ReportBandType : TFPReportBandType; override;
+    property PrintAfterReportTitle : Boolean read FPrintAfterReportTitle write FPrintAfterReportTitle;
   end;
 
 
@@ -5826,6 +5830,12 @@ begin
 end;
 
 { TFPReportCustomPageHeaderBand }
+
+constructor TFPReportCustomPageHeaderBand.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FPrintAfterReportTitle := False;
+end;
 
 class function TFPReportCustomPageHeaderBand.ElementType: String;
 begin
@@ -11154,11 +11164,12 @@ function TFPReportLayouter.HandleHeaderBands: Boolean;
 begin
   Result := False;
   { Show all header bands }
-  if Assigned(FPageHeader) then
-    //ShowPageHeaderBand(FPageHeader);
+  if Assigned(FPageHeader) and (not FPageHeader.PrintAfterReportTitle) then
     ShowBandWithChilds(FPageHeader);
   if Assigned(FTitle) then
     ShowBandWithChilds(FTitle);
+  if Assigned(FPageHeader) and (FPageHeader.PrintAfterReportTitle) then
+    ShowBandWithChilds(FPageHeader);
 end;
 
 procedure TFPReportLayouter.HandleFooterBands;

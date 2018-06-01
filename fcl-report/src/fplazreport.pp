@@ -340,7 +340,10 @@ begin
         FDetailFooter := TFPReportDataFooterBand(aBand);
     end;
   'btPageHeader':
+    begin
      aBand := TFPReportPageHeaderBand.Create(Self);
+     TFPReportPageHeaderBand(aBand).PrintAfterReportTitle:=True;
+    end;
   'btPageFooter':
      aBand := TFPReportPageFooterBand.Create(Self);
   'btGroupHeader':

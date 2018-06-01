@@ -4041,7 +4041,14 @@ begin
   if Not Assigned(RTLayout) then
     Exit;
   Case StretchMode of
-    smMaxHeight,smActualHeight:
+    smMaxHeight:
+      begin
+      RTLayout.Height := aDesiredHeight;
+      if Assigned(Parent) and Assigned(RTLayout) then
+        if Parent.RTLayout.Height > RTLayout.Height then
+          RTLayout.Height:=Parent.RTLayout.Height;
+      end;
+    smActualHeight:
       begin
       RTLayout.Height := aDesiredHeight;
       end;

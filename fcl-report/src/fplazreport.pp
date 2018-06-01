@@ -562,6 +562,7 @@ Var
   aDataNode : TDomNode;
   cd : integer;
   D :double;
+  tmp: String;
 
 begin
   Result:=TFPReportBarcode.Create(Self);
@@ -579,7 +580,12 @@ begin
     Result.Weight:=1;
   aDataNode:=ObjNode.FindNode('Data');
   if ADataNode<>Nil then
-    Result.Expression:=GetProperty(aDataNode,'Memo');
+    begin
+      tmp := FixDataFields(GetProperty(aDataNode,'Memo'));
+      if copy(tmp,0,1)='[' then
+        tmp := copy(tmp,2,system.pos(']',tmp)-2);//remove []
+      Result.Expression:=tmp;
+    end;
 end;
 
 Procedure TFPLazReport.SizeToLayout(aDataNode : TDOMNode; aObj: TFPReportElement);

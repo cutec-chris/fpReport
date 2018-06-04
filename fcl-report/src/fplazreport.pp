@@ -647,7 +647,7 @@ begin
     aColor := StrToIntDef(GetProperty(aDataNode,'FrameColor'),0);
     aFrame.Color:= RGBToReportColor(Red(aColor),Green(aColor),Blue(aColor));
     end;
-  aFrame.Width := StrToIntDef(GetProperty(aDataNode,'FrameWidth'),0);
+  aFrame.Width := round(StrToIntDef(GetProperty(aDataNode,'FrameWidth'),0) / 2);
   aFrame.Lines:=[];
   tmp := GetProperty(aDataNode,'FrameBorders');
   if tmp = '' then

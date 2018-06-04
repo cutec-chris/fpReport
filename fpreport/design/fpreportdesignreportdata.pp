@@ -20,7 +20,7 @@ unit fpreportdesignreportdata;
 interface
 
 uses
-  Classes, SysUtils, db, forms, fpjson, fprepdata;
+  Classes, SysUtils, db, forms, fpjson, fpreport, fpreportData;
 
 Type
   EDesignReportData = Class(EReportDataError);

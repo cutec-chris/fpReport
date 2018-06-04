@@ -20,7 +20,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, StdCtrls, EditBtn, Buttons, ActnList, ValEdit, fpjson, fpreportdesignreportdata, db,
-  dialogs, fpjsondataset;
+  dialogs;
 
 type
   TFrame = TReportDataConfigFrame ;
@@ -59,7 +59,7 @@ type
 
 implementation
 
-uses fpreportjson;
+uses fpreportdatajson;
 
 {$R *.lfm}
 

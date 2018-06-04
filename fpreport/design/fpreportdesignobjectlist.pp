@@ -16,7 +16,6 @@
 unit fpreportdesignobjectlist;
 
 {$mode objfpc}{$H+}
-{$modeswitch advancedrecords}
 { $DEFINE DEBUGROL}
 
 interface
@@ -27,18 +26,6 @@ uses
 Const
   clResizeHandleSingle = clBlack;  // Pen color to draw selection resize handle
   clResizeHandleMulti = cldkGray;  // Pen color to draw selection resize handle, when multiselect
-
-type
-  TRectHelper = record helper for TRect
-  private
-    function GetWidth: Integer;
-    procedure SetWidth(const Value: Integer);
-    function GetHeight: Integer;
-    procedure SetHeight(const Value: Integer);
-  public
-    property Width: Integer read GetWidth write SetWidth;
-    property Height: Integer read GetHeight write SetHeight;
-  end;
 
 Type
   TSelectionSort = (ssNone,ssHorz,ssvert);
@@ -121,6 +108,8 @@ Type
     Procedure EndSelectionUpdate;
     Procedure ClearSelection;
     Procedure ClearPreviousSelection;
+    Procedure BringToFront;
+    Procedure SendToBack;
     procedure OrderBands(aBandTextheight, ADPI: Integer); virtual;
     procedure OrderBands(ACanvas: TCanvas; ADPI: Integer);
     Procedure DrawSelectionHandles;virtual;
@@ -135,7 +124,7 @@ Type
     Procedure AdjustSelectedBandToContent(B : TFPReportCustomBand);
     Procedure AdjustSelectedBandsToContent;
     Procedure ResetModified;
-    Procedure SelectElement(E : TFPReportElement);
+    Procedure SelectElement(E : TFPReportElement; AddToSelection : Boolean = false);
     Function GetSelection : TReportObjectArray;
     // Will call selectionchanged, except when result=odrPage
     Function DeleteSelection : TObjectDeleteResult;
@@ -154,6 +143,7 @@ Type
     Function HorizontalAlignOK(A: THAlignAction) : Boolean;virtual;
     Function VerticalAlignOK(A: TVAlignAction) : Boolean;virtual;
     function PointToResizeHandlePos(P: TPoint): TResizeHandlePosition;
+    procedure SaveSelectionToStream(aStream: TStream);
     // Properties
     Property CanvasExport : TFPReportExportCanvas Read FCanvasExport Write FCanvasExport;
     Property OnSelectionChange : TNotifyEvent Read FOnSelectionChange Write FOnSelectionChange;
@@ -190,27 +180,9 @@ Function RectToStr(R : TRect) : String;
 
 implementation
 
-uses math;
+uses math, fpjson, fpreportstreamer;
 
-function TRectHelper.GetHeight: Integer;
-begin
-  Result := Bottom - Top;
-end;
 
-procedure TRectHelper.SetHeight(const Value: Integer);
-begin
-  Bottom := Top + Value;
-end;
-
-function TRectHelper.GetWidth: Integer;
-begin
-  Result := Right - Left;
-end;
-
-procedure TRectHelper.SetWidth(const Value: Integer);
-begin
-  Right := Left + Value;
-end;
 Function PointToStr(P : TPoint) : String;
 
 begin
@@ -374,13 +346,8 @@ end;
 procedure TReportObjectList.SelectRectInvalid;
 
 begin
-  {$if FPC_FULLVERSION>30000}
   FLastSelectionBounds:=Default(TRect);
   FLastSelectionRect:=Default(TFPReportRect);
-  {$else}
-  FLastSelectionBounds:=Rect(0,0,0,0);
-  FLastSelectionRect.SetRect(0,0,0,0);
-  {$endif}
 end;
 
 procedure TReportObjectList.EndSelectionUpdate;
@@ -461,6 +428,45 @@ Var
 begin
   For I:=0 to Count-1 do
     GetObject(i).FPreviousSelected:=False;
+end;
+
+procedure TReportObjectList.BringToFront;
+
+Var
+  Sel : TReportObjectArray;
+  O : TReportObject;
+  B : TFPReportCustomBand;
+
+begin
+  Sel:=GetSelection;
+  For O in Sel do
+    If O.IsPlainElement then
+      begin
+      B:=O.Element.Band;
+      if Assigned(B) then
+        B.BringToFront(O.Element);
+      O.Index:=Count-1;
+      end;
+  SelectionChanged;
+end;
+
+procedure TReportObjectList.SendToBack;
+Var
+  Sel : TReportObjectArray;
+  O : TReportObject;
+  B : TFPReportCustomBand;
+
+begin
+  Sel:=GetSelection;
+  For O in Sel do
+    If O.IsPlainElement then
+      begin
+      B:=O.Element.Band;
+      if Assigned(B) then
+        B.SendToBack(O.Element);
+      O.Index:=0;
+      end;
+  SelectionChanged;
 end;
 
 function TReportObjectList.FindNextBand(ABand: TFPReportCustomBand
@@ -727,7 +733,7 @@ begin
   FModified:=False;
 end;
 
-procedure TReportObjectList.SelectElement(E: TFPReportElement);
+procedure TReportObjectList.SelectElement(E: TFPReportElement; AddToSelection: Boolean = false);
 
 Var
   I : Integer;
@@ -737,7 +743,10 @@ begin
   For I:=0 to Count-1 do
     begin
     O:=Objects[i];
-    O.Selected:=(O.Element=E);
+    if AddToSelection then
+      O.Selected:=O.Selected or (O.Element=E)
+    else
+      O.Selected:=(O.Element=E);
     end;
 end;
 
@@ -814,8 +823,10 @@ begin
       I:=Count-1;
     end;
   ReportChanged;
+  StructureChanged;
   if (Result<>odrPage) then
     SelectionChanged;
+
 end;
 
 function TReportObjectList.HaveSelection: Boolean;
@@ -902,8 +913,9 @@ begin
   Result:=B;
   RB:=B.AsBand;
   O:=Nil;
-  I:=0;
-  While (O=Nil) and (I<COunt) do
+  // We must search backwards
+  I:=Count-1;
+  While (O=Nil) and (I>=0) do
     begin
     O:=Objects[i];
     {$IFDEF DEBUGROL}
@@ -919,7 +931,7 @@ begin
       if not PtInRect(R,P) then
         O:=Nil;
       end;
-    Inc(I);
+    Dec(I);
     end;
   if O<>Nil then
     Result:=O;
@@ -939,11 +951,7 @@ Var
   O : TReportObject;
 
 begin
-  {$if FPC_FULLVERSION>30000}
   D:=Default(TRect);
-  {$else}
-  D:=Rect(0,0,0,0);
-  {$endif}
   Result:=TFPList.Create;
   try
     For I:=0 to Count-1 do
@@ -973,11 +981,7 @@ Var
 
 begin
   BL:=Nil;
-  {$if FPC_FULLVERSION>30000}
   D:=Default(TRect);
-  {$else}
-  D:=Rect(0,0,0,0);
-  {$endif}
   Result:=TFPList.Create;
   try
     try
@@ -1488,6 +1492,61 @@ begin
       apMiddle : Result:=CenterPositions[xPos];
       // Else not needed
     end;
+end;
+
+procedure TReportObjectList.SaveSelectionToStream(aStream: TStream);
+
+  Procedure AddToList(L : TFPList; E : TFPReportElement);
+
+  Var
+    I : integer;
+    EC : TFPReportElementWithChildren;
+
+  begin
+    L.Add(E);
+    if E is TFPReportElementWithChildren then
+      begin
+      EC:=E as TFPReportElementWithChildren;
+      For I:=0 to EC.ChildCount-1 do
+        AddToList(L,EC.Child[I]);
+      end;
+  end;
+
+
+Var
+  S : TFPReportJSONStreamer;
+  C : TJSONStringType;
+  i,aCount : Integer;
+  L : TFPList;
+
+begin
+  aCount:=0;
+  L:=Nil;
+  S:=TFPReportJSONStreamer.Create(Nil);
+  try
+    L:=TFPList.Create;
+    L.Capacity:=300;
+    S.JSON:=TJSONObject.Create;
+    S.OwnsJSON:=True;
+    For I:=0 to Self.Count-1 do
+      if Objects[i].Selected and (L.IndexOf(Elements[i])=-1) then
+        begin
+        S.PushElement(IntToStr(aCount));
+        if Elements[i] is TFPReportCustomPage then
+          S.PushElement('Page');
+        Elements[i].WriteElement(S,Nil);
+        if Elements[i] is TFPReportCustomPage then
+          S.PopElement;
+        AddToList(L,Elements[i]);
+        S.PopElement;
+        Inc(aCount);
+        end;
+    C:=S.JSON.FormatJSON();
+    aStream.WriteBuffer(C[1],Length(C));
+  finally
+    L.Free;
+    S.Free;
+  end;
 end;
 
 Function HCompare (P1,P2 : Pointer) : Integer;

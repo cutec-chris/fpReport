@@ -279,6 +279,8 @@ begin
   case tmp of
   'btReportTitle':
      aBand := TFPReportTitleBand.Create(Self);
+  'btReportSummary':
+     aBand := TFPReportSummaryBand.Create(Self);
   'btMasterData':
     begin
     aBand := TFPReportDataBand.Create(Self);

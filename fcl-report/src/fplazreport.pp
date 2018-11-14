@@ -273,6 +273,9 @@ Var
   Tmp : String;
   aBand : TFPReportCustomBand;
   aData : TFPreportData;
+  FSubDetailBand: TFPReportDataBand = nil;
+  FSubDetailHeader: TFPReportDataHeaderBand = nil;
+  FSubDetailFooter: TFPReportDataFooterBand = nil;
 
 begin
   tmp := GetProperty(aBandNode,'BandType');
@@ -341,6 +344,47 @@ begin
       else
         FDetailFooter := TFPReportDataFooterBand(aBand);
     end;
+  'btSubDetailData':
+    begin
+      aBand := TFPReportDataBand.Create(Self);
+      tmp := GetProperty(aBandNode,'DatasetStr');
+      aData := nil;
+      if Uppercase(copy(tmp,1,1))='P' then
+        tmp := copy(tmp,2,system.length(tmp));
+      if Assigned(FData) and (FData.FindComponent(tmp) <> nil) then
+        aData:=TFPreportData(FData.FindComponent(tmp));
+      if Assigned(aData) and (ReportData.FindReportDataItem(aData)=Nil) then
+        ReportData.AddReportData(aData);
+      TFPReportDataBand(aBand).Data:=aData;
+      TFPReportDataBand(aBand).MasterBand := FDetailBand;
+      FSubDetailBand := TFPReportDataBand(aBand);
+      if Assigned(FSubDetailHeader) then
+        begin
+        FSubDetailHeader.Data := AData;
+        FSubDetailHeader := nil;
+        end;
+      if Assigned(FSubDetailFooter) then
+        begin
+        FSubDetailFooter.Data:=aData;
+        FSubDetailFooter:=nil;
+        end;
+    end;
+  'btSubDetailHeader':
+    begin
+      aBand:=TFPReportDataHeaderBand.Create(Self);
+      if Assigned(FSubDetailBand) then
+        TFPReportDataHeaderBand(aBand).Data := FSubDetailBand.Data
+      else
+        FSubDetailHeader:=TFPReportDataHeaderBand(aBand);
+    end;
+  'btSubDetailFooter':
+    begin
+      aBand := TFPReportDataFooterBand.Create(Self);
+      if Assigned(FSubDetailBand) then
+        TFPReportDataFooterBand(aBand).Data := FSubDetailBand.Data
+      else
+        FSubDetailFooter := TFPReportDataFooterBand(aBand);
+    end;
   'btPageHeader':
     begin
      aBand := TFPReportPageHeaderBand.Create(Self);
@@ -368,7 +412,8 @@ begin
   if Assigned(aBand) then
     begin
     TFPReportDataBand(aBand).StretchMode:=smActualHeight;
-    aBand.Parent:=aPage;
+    if not Assigned(aBand.Parent) then
+      aBand.Parent:=aPage;
     end;
   Result:=aBand;
 end;
